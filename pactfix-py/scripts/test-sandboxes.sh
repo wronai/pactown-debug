@@ -59,7 +59,11 @@ test_project() {
     fi
 
     local project_path
-    project_path="$(prepare_work_project "$src_project_path" "$project_name")"
+    if ! project_path="$(prepare_work_project "$src_project_path" "$project_name")"; then
+        FAILED=$((FAILED + 1))
+        RESULTS+=("❌ ${project_name}: Missing _fixtures/faulty")
+        return 1
+    fi
     
     # Run pactfix with sandbox
     # Note: pactfix returns 1 if errors are detected, which is expected

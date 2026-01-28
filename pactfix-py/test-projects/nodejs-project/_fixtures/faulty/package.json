@@ -1,0 +1,13 @@
+{
+  "name": "nodejs-test-project",
+  "version": "1.0.0",
+  "description": "Test project for pactfix sandbox",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo 'Tests passed' && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
