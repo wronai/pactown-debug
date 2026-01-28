@@ -12,7 +12,8 @@ func TestPactfixRewritesInterfaceToAny(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(b)
-	if strings.Contains(s, "interface{}") {
+	forbidden := "interface" + "{}"
+	if strings.Contains(s, forbidden) {
 		t.Fatalf("expected pactfix to rewrite interface{} to any")
 	}
 	if !strings.Contains(s, " any") {

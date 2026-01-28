@@ -244,6 +244,7 @@ class Sandbox:
         self.project_path = Path(project_path).resolve()
         self.sandbox_dir = Path(sandbox_dir) if sandbox_dir else self.project_path / '.pactfix'
         self.project_copy_dir = self.sandbox_dir / 'project'
+        self.build_dockerfile_name = 'Dockerfile'
         self.language = None
         self.stats = {}
         self.last_build_returncode = None
@@ -271,6 +272,11 @@ class Sandbox:
         # Detect project language
         self.language, self.stats = detect_project_language(self.project_path)
         print(f"📋 Detected language: {self.language} (confidence: {self.stats['confidence']})")
+
+        # Dockerfile projects have a subject file called Dockerfile; do not use it to build the sandbox image.
+        # Use a dedicated Dockerfile name inside the build context.
+        if self.language == 'dockerfile':
+            self.build_dockerfile_name = 'Dockerfile.pactfix'
         
         # Create Dockerfile
         dockerfile_content = LANGUAGE_DOCKERFILES.get(self.language, LANGUAGE_DOCKERFILES['generic'])
@@ -279,7 +285,7 @@ class Sandbox:
             f.write(dockerfile_content)
 
         # Also place a copy inside the build context for docker-compose compatibility
-        dockerfile_in_context = self.project_copy_dir / 'Dockerfile'
+        dockerfile_in_context = self.project_copy_dir / self.build_dockerfile_name
         with open(dockerfile_in_context, 'w') as f:
             f.write(dockerfile_content)
 
@@ -320,7 +326,7 @@ services:
   pactfix-sandbox:
     build:
       context: ./project
-      dockerfile: Dockerfile
+      dockerfile: {self.build_dockerfile_name}
     container_name: pactfix-sandbox-{self.language}
     volumes:
       - ./output:/output
@@ -384,7 +390,7 @@ dist
         try:
             result = subprocess.run(
                 ['docker', 'build', '-t', f'pactfix-sandbox-{self.language}', 
-                 '-f', str(self.project_copy_dir / 'Dockerfile'), str(self.project_copy_dir)],
+                 '-f', str(self.project_copy_dir / self.build_dockerfile_name), str(self.project_copy_dir)],
                 capture_output=True,
                 text=True,
                 timeout=300

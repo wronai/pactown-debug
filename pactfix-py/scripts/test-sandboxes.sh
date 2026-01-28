@@ -179,7 +179,7 @@ echo -e "${NC}"
 PROJECTS=("python-project" "nodejs-project" "bash-project" "go-project" "dockerfile-project")
 
 for project in "${PROJECTS[@]}"; do
-    test_project "$project"
+    test_project "$project" || true
 done
 
 # Summary
