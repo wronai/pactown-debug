@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help test test-frontend test-backend test-pactfix lint publish build-pactfix clean
+.PHONY: help test test-frontend test-backend test-pactfix lint publish build-pactfix bump-patch clean
 
 PACTFIX_DIR ?= pactfix-py
 
@@ -28,11 +28,10 @@ build-pactfix:
 	cd $(PACTFIX_DIR) && python -m pip install -q --upgrade build twine
 	cd $(PACTFIX_DIR) && python -m build --sdist --wheel
 
-publish: build-pactfix
-	@if [ -z "$$TWINE_USERNAME" ] || [ -z "$$TWINE_PASSWORD" ]; then \
-		echo "TWINE_USERNAME/TWINE_PASSWORD must be set (or use TWINE_USERNAME=__token__ and TWINE_PASSWORD=pypi-...)"; \
-		exit 2; \
-	fi
+bump-patch:
+	python -c 'from pathlib import Path; import re; pyproject = Path("$(PACTFIX_DIR)") / "pyproject.toml"; content = pyproject.read_text(encoding="utf-8"); pattern = re.compile(r"^version\s*=\s*\"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)\"\s*$", re.MULTILINE); match = pattern.search(content); assert match, "Could not find version in pyproject.toml"; major = int(match.group("major")); minor = int(match.group("minor")); patch = int(match.group("patch")) + 1; new_version = f"{major}.{minor}.{patch}"; updated = pattern.sub(lambda m: f"version = \"{new_version}\"", content, count=1); pyproject.write_text(updated, encoding="utf-8"); print(f"Bumped pactfix version to {new_version}")'
+
+publish: bump-patch build-pactfix
 	cd $(PACTFIX_DIR) && python -m twine upload dist/*
 
 clean:

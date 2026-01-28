@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pactfix"
-version = "1.0.0"
+version = "1.0.1"
 description = "Multi-language code and config file analyzer and fixer"
 readme = "README.md"
 license = {text = "Apache-2.0"}

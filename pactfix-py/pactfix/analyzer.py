@@ -136,6 +136,52 @@ def detect_language(code: str, filename: str = None) -> str:
     return 'bash'
 
 
+def _brace_unbraced_bash_vars(line: str) -> str:
+    out = []
+    i = 0
+    in_single = False
+    in_double = False
+    escaped = False
+    while i < len(line):
+        ch = line[i]
+        if escaped:
+            out.append(ch)
+            escaped = False
+            i += 1
+            continue
+        if ch == '\\':
+            out.append(ch)
+            escaped = True
+            i += 1
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '$' and not in_single:
+            if i + 1 < len(line) and line[i + 1] == '{':
+                out.append(ch)
+                i += 1
+                continue
+            if i + 1 < len(line) and re.match(r'[A-Za-z_]', line[i + 1]):
+                j = i + 2
+                while j < len(line) and re.match(r'[A-Za-z0-9_]', line[j]):
+                    j += 1
+                name = line[i + 1:j]
+                out.append('${' + name + '}')
+                i = j
+                continue
+        out.append(ch)
+        i += 1
+    return ''.join(out)
+
+
 def analyze_bash(code: str) -> AnalysisResult:
     """Analyze Bash script."""
     errors, warnings, fixes = [], [], []
@@ -143,19 +189,25 @@ def analyze_bash(code: str) -> AnalysisResult:
     fixed_lines = lines.copy()
     
     for i, line in enumerate(lines, 1):
-        stripped = line.strip()
+        current_line = fixed_lines[i-1]
+        stripped = current_line.strip()
         
-        # SC2086: Double quote to prevent globbing
-        if re.search(r'\$\w+', stripped) and not re.search(r'"\$\w+"', stripped):
-            if 'echo' in stripped or '=' in stripped:
-                warnings.append(Issue(i, 1, 'SC2086', 'Zmienne powinny być w cudzysłowach'))
+        # Variables without braces: use ${VAR} for clarity (e.g. ${OUTPUT}/${HOST})
+        if not stripped.startswith('#') and re.search(r'\$[A-Za-z_][A-Za-z0-9_]*', stripped):
+            braced = _brace_unbraced_bash_vars(stripped)
+            if braced != stripped:
+                warnings.append(Issue(i, 1, 'BASH001', 'Zmienne bez klamerek: użyj składni ${VAR} (np. ${OUTPUT}/${HOST})'))
+                fixes.append(Fix(i, 'Dodano klamerki do zmiennych', stripped, braced))
+                current_line = current_line.replace(stripped, braced)
+                stripped = braced
         
         # SC2164: cd without error handling
         if re.match(r'^cd\s+', stripped) and '||' not in stripped and '&&' not in stripped:
             warnings.append(Issue(i, 1, 'SC2164', 'cd bez obsługi błędów - użyj cd ... || exit'))
             fix_line = stripped + ' || exit 1'
             fixes.append(Fix(i, 'Dodano obsługę błędów dla cd', stripped, fix_line))
-            fixed_lines[i-1] = line.replace(stripped, fix_line)
+            current_line = current_line.replace(stripped, fix_line)
+            stripped = fix_line
         
         # SC2162: read without -r
         if re.match(r'^read\s+', stripped) and '-r' not in stripped:
@@ -167,7 +219,9 @@ def analyze_bash(code: str) -> AnalysisResult:
             errors.append(Issue(i, 1, 'SC1073', 'Błędne umiejscowienie cudzysłowów'))
             fixed = f'{quote_match.group(1)}="{quote_match.group(2)}{quote_match.group(3)}"'
             fixes.append(Fix(i, 'Poprawiono cudzysłowy', quote_match.group(0), fixed))
-            fixed_lines[i-1] = line.replace(quote_match.group(0), fixed)
+            current_line = current_line.replace(quote_match.group(0), fixed)
+        
+        fixed_lines[i-1] = current_line
     
     return AnalysisResult('bash', code, '\n'.join(fixed_lines), errors, warnings, fixes)
 

@@ -76,6 +76,108 @@ SHELLCHECK_MESSAGES = {
 }
 
 
+def _split_bash_comment(line: str) -> tuple[str, str]:
+    in_single = False
+    in_double = False
+    escaped = False
+    for i, ch in enumerate(line):
+        if escaped:
+            escaped = False
+            continue
+        if ch == '\\':
+            escaped = True
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            continue
+        if ch == '#' and not in_single and not in_double:
+            return line[:i], line[i:]
+    return line, ''
+
+
+def _brace_unbraced_bash_vars(line: str) -> str:
+    out = []
+    i = 0
+    in_single = False
+    in_double = False
+    escaped = False
+    while i < len(line):
+        ch = line[i]
+        if escaped:
+            out.append(ch)
+            escaped = False
+            i += 1
+            continue
+        if ch == '\\':
+            out.append(ch)
+            escaped = True
+            i += 1
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '$' and not in_single:
+            if i + 1 < len(line) and line[i + 1] == '{':
+                out.append(ch)
+                i += 1
+                continue
+            if i + 1 < len(line) and re.match(r'[A-Za-z_]', line[i + 1]):
+                j = i + 2
+                while j < len(line) and re.match(r'[A-Za-z0-9_]', line[j]):
+                    j += 1
+                name = line[i + 1:j]
+                out.append('${' + name + '}')
+                i = j
+                continue
+        out.append(ch)
+        i += 1
+    return ''.join(out)
+
+
+def apply_brace_fixes(code: str) -> tuple[str, list, list]:
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    for i, line in enumerate(lines, 1):
+        if '$' not in line:
+            continue
+        if line.strip().startswith('#'):
+            continue
+
+        code_part, comment_part = _split_bash_comment(line)
+        braced_code_part = _brace_unbraced_bash_vars(code_part)
+        if braced_code_part == code_part:
+            continue
+
+        new_line = braced_code_part + comment_part
+        dollar_pos = braced_code_part.find('${')
+        warnings.append({
+            'line': i,
+            'column': (dollar_pos + 1) if dollar_pos >= 0 else 1,
+            'code': 'BASH001',
+            'message': 'Zmienne bez klamerek: użyj składni ${VAR} (np. ${OUTPUT}/${HOST})'
+        })
+        fixes.append({
+            'line': i,
+            'message': 'Dodano klamerki do zmiennych',
+            'before': line.strip(),
+            'after': new_line.strip()
+        })
+        lines[i - 1] = new_line
+
+    return '\n'.join(lines), warnings, fixes
+
+
 def run_shellcheck(code: str) -> dict:
     """Run ShellCheck on the code and return parsed results."""
     try:
@@ -147,12 +249,15 @@ def analyze_with_builtin(code: str) -> dict:
             before_var = line[:var_match.start()]
             quote_count = before_var.count('"') - before_var.count('\\"')
             if quote_count % 2 == 0:  # Not inside quotes
-                warnings.append({
-                    'line': i,
-                    'column': var_match.start() + 1,
-                    'code': 'SC2086',
-                    'message': f'Zmienna {var_match.group()} powinna być w cudzysłowach dla bezpieczeństwa'
-                })
+                left = line[var_match.start() - 1] if var_match.start() > 0 else ' '
+                right = line[var_match.end()] if var_match.end() < len(line) else ' '
+                if left.isspace() and (right.isspace() or right in ';|&'):
+                    warnings.append({
+                        'line': i,
+                        'column': var_match.start() + 1,
+                        'code': 'SC2086',
+                        'message': f'Zmienna {var_match.group()} powinna być w cudzysłowach dla bezpieczeństwa'
+                    })
         
         # Check for #!/usr/bin/bash
         if i == 1 and stripped.startswith('#!/usr/bin/bash'):
@@ -299,6 +404,13 @@ def analyze_code(code: str) -> dict:
                     lines[line_num] = lines[line_num].replace(fix['before'], fix['after'])
         
         result['fixedCode'] = '\n'.join(lines)
+
+    # Apply brace fixes ($VAR -> ${VAR}) regardless of analysis path
+    braced_code, brace_warnings, brace_fixes = apply_brace_fixes(result['fixedCode'])
+    if braced_code != result['fixedCode']:
+        result['fixedCode'] = braced_code
+        result['warnings'].extend(brace_warnings)
+        result['fixes'].extend(brace_fixes)
     
     # Add comments to fixed code
     result['fixedCode'] = add_fix_comments(result['fixedCode'], result['fixes'])

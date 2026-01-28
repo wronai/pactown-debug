@@ -1,6 +1,8 @@
 .idea
 screenshots/
 /logs
+playwright-report
+test-results
 logs/
 .zip
 backups/

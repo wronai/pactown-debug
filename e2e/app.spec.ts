@@ -1,4 +1,11 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function waitForAnalysisDone(page: Page) {
+  await page.waitForFunction(() => {
+    const status = document.getElementById('analyzeStatus');
+    return status?.textContent === 'Analiza zakończona';
+  }, { timeout: 5000 });
+}
 
 test.describe('Pactown Live Debug - E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -134,10 +141,7 @@ test.describe('Pactown Live Debug - E2E Tests', () => {
     await input.fill('#!/bin/bash\nif [ "$VAR" = "test" ]; then\n  echo "Hello"\nfi');
     
     // Wait for analysis
-    await page.waitForFunction(() => {
-      const status = document.getElementById('analyzeStatus');
-      return status?.textContent === 'Analiza zakończona';
-    }, { timeout: 5000 });
+    await waitForAnalysisDone(page);
     
     // Check that output contains the code lines with highlighting spans
     const output = page.locator('#codeOutput');
@@ -157,6 +161,27 @@ test.describe('Pactown Live Debug - E2E Tests', () => {
     await expect(lineNumbers).toContainText('1');
     await expect(lineNumbers).toContainText('2');
     await expect(lineNumbers).toContainText('3');
+  });
+
+  test('should support Markdown mode preview and text output', async ({ page }) => {
+    await page.click('#modeMarkdownBtn');
+
+    await page.click('button:has-text("Przykład")');
+
+    await waitForAnalysisDone(page);
+
+    await expect(page.locator('#codeOutput')).toContainText('Example README');
+    await expect(page.locator('#codeOutput h1')).toHaveCount(1);
+    await expect(page.locator('#codeOutput pre code')).toHaveCount(3);
+
+    const outputHtml = await page.locator('#codeOutput').innerHTML();
+    expect(outputHtml).not.toContain('"comment">');
+
+    await page.click('#outputViewCodeBtn');
+
+    await expect(page.locator('#outputLineNumbers')).toBeVisible();
+
+    await expect(page.locator('#codeOutput .code-line')).not.toHaveCount(0);
   });
 });
 

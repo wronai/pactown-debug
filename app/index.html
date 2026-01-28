@@ -312,6 +312,74 @@
             overflow: auto;
         }
 
+        .btn-toggle-active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.15);
+        }
+
+        .code-output.markdown-preview {
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.7;
+        }
+
+        .code-output.markdown-preview h1,
+        .code-output.markdown-preview h2,
+        .code-output.markdown-preview h3,
+        .code-output.markdown-preview h4,
+        .code-output.markdown-preview h5,
+        .code-output.markdown-preview h6 {
+            margin: 18px 0 10px;
+            font-weight: 700;
+        }
+
+        .code-output.markdown-preview p {
+            margin: 10px 0;
+            color: var(--text-primary);
+        }
+
+        .code-output.markdown-preview ul {
+            margin: 10px 0 10px 22px;
+        }
+
+        .code-output.markdown-preview li {
+            margin: 6px 0;
+        }
+
+        .code-output.markdown-preview a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .code-output.markdown-preview a:hover {
+            text-decoration: underline;
+        }
+
+        .code-output.markdown-preview code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+
+        .code-output.markdown-preview pre {
+            margin: 14px 0;
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: auto;
+        }
+
+        .code-output.markdown-preview pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            border-radius: 0;
+            white-space: pre;
+        }
+
         /* Syntax highlighting */
         .code-line {
             display: block;
@@ -645,9 +713,15 @@
                 <div class="panel-header">
                     <div class="panel-title">
                         <div class="panel-title-icon">📝</div>
-                        <span>Wejście - Wklej kod z błędami</span>
+                        <span id="inputTitleText">Wejście - Wklej kod z błędami</span>
                     </div>
                     <div class="panel-actions">
+                        <button class="btn btn-secondary" id="modeCodeBtn" onclick="setMode('code')">
+                            💻 Kod
+                        </button>
+                        <button class="btn btn-secondary" id="modeMarkdownBtn" onclick="setMode('markdown')">
+                            🧾 Markdown
+                        </button>
                         <button class="btn btn-secondary" onclick="clearInput()">
                             🗑️ Wyczyść
                         </button>
@@ -656,6 +730,9 @@
                         </button>
                         <button class="btn btn-secondary" onclick="loadPythonExample()">
                             🐍 Python
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadMarkdownExample()">
+                            🧾 Przykład
                         </button>
                     </div>
                 </div>
@@ -689,10 +766,16 @@
                 <div class="panel-header">
                     <div class="panel-title">
                         <div class="panel-title-icon">✅</div>
-                        <span>Wyjście - Poprawiony kod</span>
+                        <span id="outputTitleText">Wyjście - Poprawiony kod</span>
                         <span id="languageBadge" class="language-badge" style="display:none; margin-left: 10px; padding: 4px 8px; background: var(--bg-primary); border-radius: 4px; font-size: 12px; color: var(--accent-blue);"></span>
                     </div>
                     <div class="panel-actions">
+                        <button class="btn btn-secondary" id="outputViewPreviewBtn" onclick="setOutputView('preview')" style="display:none;">
+                            👁️ Podgląd
+                        </button>
+                        <button class="btn btn-secondary" id="outputViewCodeBtn" onclick="setOutputView('code')" style="display:none;">
+                            🧾 Tekst
+                        </button>
                         <button class="btn btn-secondary" onclick="copyOutput()">
                             📋 Kopiuj
                         </button>
@@ -753,6 +836,8 @@
         let history = [];
         let debounceTimer = null;
         let lastAnalysis = null;
+        let currentMode = 'code';
+        let outputView = 'code';
 
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -760,10 +845,48 @@
         const inputLineNumbers = document.getElementById('inputLineNumbers');
         const outputLineNumbers = document.getElementById('outputLineNumbers');
         const historyContent = document.getElementById('historyContent');
+        const inputTitleText = document.getElementById('inputTitleText');
+        const outputTitleText = document.getElementById('outputTitleText');
+        const modeCodeBtn = document.getElementById('modeCodeBtn');
+        const modeMarkdownBtn = document.getElementById('modeMarkdownBtn');
+        const outputViewPreviewBtn = document.getElementById('outputViewPreviewBtn');
+        const outputViewCodeBtn = document.getElementById('outputViewCodeBtn');
 
         // Initialize
         codeInput.addEventListener('input', handleInput);
         codeInput.addEventListener('scroll', syncScroll);
+
+        function setMode(mode) {
+            currentMode = mode === 'markdown' ? 'markdown' : 'code';
+            if (currentMode === 'markdown') {
+                inputTitleText.textContent = 'Wejście - Markdown';
+                outputTitleText.textContent = 'Wyjście - Podgląd Markdown';
+                codeInput.placeholder = 'Wklej Markdown tutaj...\n\nZawartość bloków ``` zostanie przeanalizowana i naprawiona.';
+                outputViewPreviewBtn.style.display = 'inline-flex';
+                outputViewCodeBtn.style.display = 'inline-flex';
+                setOutputView('preview', { skipAnalyze: true });
+            } else {
+                inputTitleText.textContent = 'Wejście - Wklej kod z błędami';
+                outputTitleText.textContent = 'Wyjście - Poprawiony kod';
+                codeInput.placeholder = 'Wklej swój skrypt Bash tutaj...\n\nBłędy zostaną automatycznie wykryte i naprawione.';
+                outputViewPreviewBtn.style.display = 'none';
+                outputViewCodeBtn.style.display = 'none';
+                setOutputView('code', { skipAnalyze: true });
+            }
+            modeCodeBtn.classList.toggle('btn-toggle-active', currentMode === 'code');
+            modeMarkdownBtn.classList.toggle('btn-toggle-active', currentMode === 'markdown');
+            handleInput();
+        }
+
+        function setOutputView(view, opts = {}) {
+            outputView = view === 'preview' ? 'preview' : 'code';
+            outputViewPreviewBtn.classList.toggle('btn-toggle-active', outputView === 'preview');
+            outputViewCodeBtn.classList.toggle('btn-toggle-active', outputView === 'code');
+
+            if (!opts.skipAnalyze && lastAnalysis) {
+                displayResult(lastAnalysis);
+            }
+        }
 
         function handleInput() {
             updateStats();
@@ -809,6 +932,7 @@
             const code = codeInput.value.trim();
             
             if (!code) {
+                lastAnalysis = null;
                 codeOutput.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🔍</div>
@@ -816,6 +940,8 @@
                     </div>
                 `;
                 renderLineNumbers(outputLineNumbers, 1);
+                outputLineNumbers.style.display = '';
+                codeOutput.classList.remove('markdown-preview');
                 document.getElementById('errorCount').textContent = '0';
                 document.getElementById('fixedCount').textContent = '0';
                 document.getElementById('warningCount').textContent = '0';
@@ -825,13 +951,16 @@
             }
 
             try {
+                const payload = { code };
+                if (currentMode === 'markdown') payload.language = 'markdown';
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
+                lastAnalysis = result;
                 
                 displayResult(result);
                 updateHistory(result);
@@ -863,6 +992,16 @@
                 codeOutput.innerHTML = '<div class="empty-state"><p>Brak poprawek do wyświetlenia</p></div>';
                 return;
             }
+
+            if (currentMode === 'markdown' && outputView === 'preview') {
+                outputLineNumbers.style.display = 'none';
+                codeOutput.classList.add('markdown-preview');
+                codeOutput.innerHTML = renderMarkdown(result.fixedCode);
+                return;
+            }
+
+            outputLineNumbers.style.display = '';
+            codeOutput.classList.remove('markdown-preview');
 
             let html = '';
             let lineNumber = 1;
@@ -910,6 +1049,95 @@
 
             renderLineNumbers(outputLineNumbers, lines.length);
             codeOutput.innerHTML = html;
+        }
+
+        function renderMarkdown(md) {
+            const lines = (md || '').split('\n');
+            let html = '';
+            let inFence = false;
+            let inList = false;
+
+            const closeList = () => {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            };
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                if (!inFence && trimmed.startsWith('```')) {
+                    closeList();
+                    inFence = true;
+                    const lang = trimmed.slice(3).trim();
+                    const cls = lang ? ` language-${escapeHtml(lang)}` : '';
+                    html += `<pre><code class="md-code${cls}">`;
+                    continue;
+                }
+
+                if (inFence) {
+                    if (trimmed.startsWith('```')) {
+                        html += '</code></pre>';
+                        inFence = false;
+                    } else {
+                        html += `${escapeHtml(line)}\n`;
+                    }
+                    continue;
+                }
+
+                const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+                if (headingMatch) {
+                    closeList();
+                    const level = headingMatch[1].length;
+                    html += `<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`;
+                    continue;
+                }
+
+                const listMatch = line.match(/^\s*[-*]\s+(.+)$/);
+                if (listMatch) {
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    html += `<li>${renderInlineMarkdown(listMatch[1])}</li>`;
+                    continue;
+                }
+
+                if (!trimmed) {
+                    closeList();
+                    continue;
+                }
+
+                closeList();
+                html += `<p>${renderInlineMarkdown(line)}</p>`;
+            }
+
+            closeList();
+            if (inFence) html += '</code></pre>';
+            return html;
+        }
+
+        function renderInlineMarkdown(text) {
+            const s = String(text ?? '');
+            let out = '';
+            let last = 0;
+            const re = /`([^`]+)`/g;
+            let m;
+            while ((m = re.exec(s)) !== null) {
+                out += escapeHtml(s.slice(last, m.index));
+                out += `<code>${escapeHtml(m[1])}</code>`;
+                last = m.index + m[0].length;
+            }
+            out += escapeHtml(s.slice(last));
+
+            out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+                return `<a href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+            });
+
+            return out;
         }
 
         function highlightSyntax(line) {
@@ -976,6 +1204,10 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function escapeAttribute(text) {
+            return escapeHtml(String(text ?? '')).replace(/"/g, '&quot;');
         }
 
         function updateHistory(result) {
@@ -1054,7 +1286,14 @@
             handleInput();
         }
 
+        function loadMarkdownExample() {
+            setMode('markdown');
+            codeInput.value = `# Example README\n\nThis document includes multiple fenced code blocks.\n\n\`\`\`bash\nexport TOKEN=hardcoded\nif [ -z \"$TOKEN\" ]; then\n  echo \"missing\"\nfi\n\`\`\`\n\n\`\`\`python\ndef process_data(items=[]):\n    for item in items:\n        if item == None:\n            print \"Item is None\"\n\`\`\`\n\n\`\`\`dockerfile\nFROM ubuntu:latest\nRUN apt-get update\n\`\`\``;
+            handleInput();
+        }
+
         function loadExample() {
+            setMode('code');
             codeInput.value = `#!/usr/bin/bash
 OUTPUT=/home/student/output-
 
@@ -1072,6 +1311,7 @@ echo "Zakończono"`;
         }
 
         function loadPythonExample() {
+            setMode('code');
             codeInput.value = `#!/usr/bin/env python3
 import os
 import sys
@@ -1094,7 +1334,7 @@ if __name__ == "__main__":
         }
 
         async function copyOutput() {
-            const text = codeOutput.textContent;
+            const text = (lastAnalysis && lastAnalysis.fixedCode) ? lastAnalysis.fixedCode : codeOutput.textContent;
             try {
                 await navigator.clipboard.writeText(text);
                 showToast('Skopiowano do schowka!', 'success');
@@ -1104,17 +1344,44 @@ if __name__ == "__main__":
         }
 
         function downloadOutput() {
-            const text = codeOutput.textContent;
+            const text = (lastAnalysis && lastAnalysis.fixedCode) ? lastAnalysis.fixedCode : codeOutput.textContent;
             if (!text || text.includes('Wklej kod')) {
                 showToast('Brak kodu do pobrania', 'error');
                 return;
             }
-            
-            const blob = new Blob([text], { type: 'text/x-shellscript' });
+
+            const lang = lastAnalysis && lastAnalysis.language ? String(lastAnalysis.language) : (currentMode === 'markdown' ? 'markdown' : 'bash');
+            const extMap = {
+                markdown: 'md',
+                python: 'py',
+                javascript: 'js',
+                nodejs: 'js',
+                bash: 'sh',
+                dockerfile: 'Dockerfile',
+                nginx: 'conf',
+                terraform: 'tf',
+                sql: 'sql',
+                'docker-compose': 'yml',
+                'github-actions': 'yml',
+                ansible: 'yml'
+            };
+            const mimeMap = {
+                markdown: 'text/markdown',
+                python: 'text/x-python',
+                javascript: 'text/javascript',
+                nodejs: 'text/javascript',
+                bash: 'text/x-shellscript'
+            };
+
+            const ext = extMap[lang] || 'txt';
+            const mime = mimeMap[lang] || 'text/plain';
+            const filename = ext === 'Dockerfile' ? 'Dockerfile' : `fixed.${ext}`;
+
+            const blob = new Blob([text], { type: mime });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'fixed-script.sh';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1140,6 +1407,7 @@ if __name__ == "__main__":
         }
 
         // Initial state
+        setMode('code');
         updateStats();
         updateLineNumbers();
     </script>
