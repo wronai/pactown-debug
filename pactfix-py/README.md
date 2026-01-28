@@ -2,93 +2,117 @@
 
 Multi-language code and config file analyzer and fixer with Docker sandbox support.
 
-## Supported Languages
-
-### Code
-
-- Bash, Python, PHP, JavaScript, Node.js
-- TypeScript, Go, Rust, Java, C#, Ruby
-
-### Config Files
-
-- Dockerfile, docker-compose.yml
-- SQL, Terraform, Kubernetes YAML
-- nginx config, GitHub Actions, Ansible playbooks
-- Apache, Systemd, Makefile
-
 ## Installation
 
 ```bash
 pip install -e .
 ```
 
-## CLI Usage
+## Commands
 
-### Single File Analysis
-
-```bash
-pactfix input.py -o output.py --log-file log.json -v
-pactfix input.py --json
-```
-
-### Project Scanning (NEW)
+### 1. Fix Files In Place (with comments)
 
 ```bash
-# Scan and fix all files in project, add comments above changed lines
-pactfix --path ./ --comment
-
-# Scan project and run in Docker sandbox
-pactfix --path ./ --sandbox
-
-# Scan, fix, and run tests in sandbox
-pactfix --path ./ --sandbox --test
-
-# Verbose output
-pactfix --path ./ --comment -v
+pactfix --path ./my-project --comment
+pactfix --path ./my-project --comment -v  # verbose
 ```
 
-### Sandbox Mode (NEW)
+**What it does:**
+- Scans all files in the project
+- Fixes issues **directly in original files**
+- Adds comment above each changed line explaining the fix
+- Does NOT create `.pactfix/` directory
 
-```bash
-# Setup sandbox only (without fixing)
-pactfix --sandbox-only ./my-project
-
-# Create Dockerfiles for all languages
-pactfix --init-dockerfiles ./dockerfiles/
-```
-
-### Batch Processing
-
-```bash
-pactfix --batch ./src
-pactfix --fix-all
-```
-
-## Features
-
-### `--path` - Project Scanning
-
-Scans entire project directory, analyzes all supported files, and saves:
-- Fixed files to `.pactfix/fixed/`
-- Report to `.pactfix/report.json`
-
-### `--comment` - Fix Comments
-
-Adds comment above each changed line explaining the fix:
-
+**Example output in file:**
 ```python
-# pactfix: Added parentheses to print() (was: print "hello")
+# pactfix: Dodano nawiasy do print() (was: print "hello")
 print("hello")
 ```
 
-### `--sandbox` - Docker Sandbox
-Creates isolated Docker environment in `.pactfix/` folder:
-- Auto-detects project language
-- Generates appropriate Dockerfile
-- Creates docker-compose.yml
-- Copies fixed files for testing
+### 2. Sandbox Mode (Docker)
 
-### Supported Sandbox Languages
+```bash
+pactfix --path ./my-project --sandbox
+pactfix --path ./my-project --sandbox --test  # also run tests
+```
+
+**What it does:**
+- Scans all files in the project
+- Creates `.pactfix/` directory with:
+  - `fixed/` - copy of fixed files
+  - `Dockerfile` - auto-generated for detected language
+  - `docker-compose.yml` - ready to run
+  - `report.json` - analysis report
+- Builds and runs Docker container
+- Original files are NOT modified
+
+**Directory structure:**
+```
+my-project/
+├── .pactfix/
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── fixed/
+│   │   └── (fixed files)
+│   ├── report.json
+│   └── sandbox_output.txt
+└── (original files unchanged)
+```
+
+### 3. Single File Analysis
+
+```bash
+pactfix input.py                          # analyze only
+pactfix input.py -o output.py             # save fixed file
+pactfix input.py --comment -o output.py   # with comments
+pactfix input.py --json                   # JSON output
+```
+
+### 4. Batch Processing
+
+```bash
+pactfix --batch ./src      # analyze directory
+pactfix --fix-all          # fix all examples/
+```
+
+### 5. Sandbox Setup Only
+
+```bash
+pactfix --sandbox-only ./my-project
+```
+
+Creates `.pactfix/` with Dockerfile but doesn't analyze/fix files.
+
+### 6. Generate Dockerfiles
+
+```bash
+pactfix --init-dockerfiles ./dockerfiles/
+```
+
+Creates Dockerfiles for all supported languages.
+
+## Command Reference
+
+| Command | Mode | Modifies Original Files | Creates .pactfix/ |
+|---------|------|------------------------|-------------------|
+| `--path ./dir --comment` | In-place fix | ✅ Yes | ❌ No |
+| `--path ./dir --sandbox` | Sandbox | ❌ No | ✅ Yes |
+| `--sandbox-only ./dir` | Setup only | ❌ No | ✅ Yes |
+| `input.py -o output.py` | Single file | ❌ No | ❌ No |
+
+## Supported Languages
+
+### Code
+- Bash, Python, PHP, JavaScript, Node.js
+- TypeScript, Go, Rust, Java, C#, Ruby
+
+### Config Files
+- Dockerfile, docker-compose.yml
+- SQL, Terraform, Kubernetes YAML
+- nginx, GitHub Actions, Ansible
+- Apache, Systemd, Makefile
+
+## Sandbox Docker Images
 
 | Language   | Base Image              |
 |------------|-------------------------|
@@ -105,13 +129,23 @@ Creates isolated Docker environment in `.pactfix/` folder:
 | Terraform  | hashicorp/terraform:1.6 |
 | Ansible    | python:3.11-slim        |
 
+## Examples
+
+```bash
+# Fix Python project in place with comments
+pactfix --path ./my-python-app --comment -v
+
+# Test fixes in Docker sandbox
+pactfix --path ./my-node-app --sandbox --test
+
+# Analyze without modifying
+pactfix --batch ./src -v
+```
+
 ## API Server
 
 ```bash
-# Run server
 python -m pactfix.server
-
-# Or with custom port
 PORT=8000 python -m pactfix.server
 ```
 
@@ -121,10 +155,3 @@ PORT=8000 python -m pactfix.server
 - `POST /api/analyze` - Analyze code
 - `POST /api/detect` - Detect language
 - `GET /api/languages` - List supported languages
-
-## Docker
-
-```bash
-docker build -t pactfix .
-docker run -p 5000:5000 pactfix
-```

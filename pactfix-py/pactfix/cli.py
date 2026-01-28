@@ -410,14 +410,21 @@ def setup_sandbox_only(project_path: str, verbose: bool = False) -> int:
 
 def process_project(project_path: str, comment: bool = False, sandbox: bool = False,
                     run_tests: bool = False, verbose: bool = False) -> int:
-    """Process entire project - scan, fix all files, optionally run in sandbox."""
+    """Process entire project - scan, fix all files, optionally run in sandbox.
+    
+    Modes:
+    - Without --sandbox: Fix files IN PLACE (replace original files)
+    - With --sandbox: Copy fixed files to .pactfix/ and run Docker sandbox
+    """
     path = Path(project_path).resolve()
     
     if not path.exists():
         print(f"❌ Path does not exist: {path}", file=sys.stderr)
         return 1
     
-    print(f"🔍 Pactfix - scanning project: {path}\n")
+    mode_str = "🐳 SANDBOX MODE" if sandbox else "📝 IN-PLACE FIX MODE"
+    print(f"🔍 Pactfix - scanning project: {path}")
+    print(f"   {mode_str}\n")
     
     # Detect project language
     language, stats = detect_project_language(path)
@@ -457,14 +464,13 @@ def process_project(project_path: str, comment: bool = False, sandbox: bool = Fa
     # Process files
     results = []
     fixed_files = {}
+    files_modified = []
     total_errors = 0
     total_warnings = 0
     total_fixes = 0
     
-    # Create output directory for fixed files
-    pactfix_dir = path / '.pactfix'
-    fixed_dir = pactfix_dir / 'fixed'
-    fixed_dir.mkdir(parents=True, exist_ok=True)
+    # Only create .pactfix dir in sandbox mode
+    pactfix_dir = path / '.pactfix' if sandbox else None
     
     for file_path in sorted(set(files_to_process)):
         try:
@@ -480,23 +486,31 @@ def process_project(project_path: str, comment: bool = False, sandbox: bool = Fa
             total_warnings += len(result.warnings)
             total_fixes += len(result.fixes)
             
-            # Save fixed file if there are fixes
+            rel_path = file_path.relative_to(path)
+            
+            # Save fixed file
             if result.fixes:
-                rel_path = file_path.relative_to(path)
-                fixed_file_path = fixed_dir / rel_path
-                fixed_file_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                with open(fixed_file_path, 'w', encoding='utf-8') as f:
-                    f.write(result.fixed_code)
-                
-                fixed_files[str(rel_path)] = result.fixed_code
+                if sandbox:
+                    # Sandbox mode: save to .pactfix/fixed/
+                    fixed_dir = pactfix_dir / 'fixed'
+                    fixed_dir.mkdir(parents=True, exist_ok=True)
+                    fixed_file_path = fixed_dir / rel_path
+                    fixed_file_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(fixed_file_path, 'w', encoding='utf-8') as f:
+                        f.write(result.fixed_code)
+                    fixed_files[str(rel_path)] = result.fixed_code
+                else:
+                    # In-place mode: overwrite original file
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(result.fixed_code)
+                    files_modified.append(str(rel_path))
             
             # Print status
             status = "✅" if len(result.errors) == 0 else "❌"
-            rel_path = file_path.relative_to(path)
             
             if result.fixes or result.errors or verbose:
-                print(f"{status} {rel_path}: {len(result.errors)}E {len(result.warnings)}W {len(result.fixes)}F [{result.language}]")
+                fix_indicator = " 📝" if result.fixes and not sandbox else ""
+                print(f"{status} {rel_path}: {len(result.errors)}E {len(result.warnings)}W {len(result.fixes)}F [{result.language}]{fix_indicator}")
                 
                 if verbose:
                     for err in result.errors:
@@ -524,28 +538,35 @@ def process_project(project_path: str, comment: bool = False, sandbox: bool = Fa
     print(f"   ⚠️  Warnings: {total_warnings}")
     print(f"   🔧 Fixes:    {total_fixes}")
     
-    if fixed_files:
-        print(f"\n   📄 Fixed files saved to: {fixed_dir}")
-    
-    # Save report
-    report_path = pactfix_dir / 'report.json'
-    with open(report_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            'timestamp': datetime.now().isoformat(),
-            'project_path': str(path),
-            'project_language': language,
-            'total_files': len(results),
-            'total_errors': total_errors,
-            'total_warnings': total_warnings,
-            'total_fixes': total_fixes,
-            'comment_mode': comment,
-            'files': results
-        }, f, indent=2, ensure_ascii=False)
-    
-    print(f"   📋 Report saved to: {report_path}")
+    if not sandbox and files_modified:
+        print(f"\n   � Files modified in place: {len(files_modified)}")
+        for f in files_modified:
+            print(f"      - {f}")
     
     # Sandbox mode
     if sandbox:
+        pactfix_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save report
+        report_path = pactfix_dir / 'report.json'
+        with open(report_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                'timestamp': datetime.now().isoformat(),
+                'project_path': str(path),
+                'project_language': language,
+                'total_files': len(results),
+                'total_errors': total_errors,
+                'total_warnings': total_warnings,
+                'total_fixes': total_fixes,
+                'comment_mode': comment,
+                'files': results
+            }, f, indent=2, ensure_ascii=False)
+        
+        print(f"\n   📋 Report saved to: {report_path}")
+        
+        if fixed_files:
+            print(f"   📄 Fixed files saved to: {pactfix_dir / 'fixed'}")
+        
         print(f"\n{'='*60}")
         print("🐳 Setting up Docker sandbox...")
         
@@ -556,18 +577,28 @@ def process_project(project_path: str, comment: bool = False, sandbox: bool = Fa
             print(f"\n📦 Copying {len(fixed_files)} fixed files to sandbox...")
             sandbox_env.copy_fixed_files(fixed_files)
         
-        # Build
-        success, output = sandbox_env.build()
+        # Build and run
+        print(f"\n🔨 Building Docker image for {language}...")
+        success, build_output = sandbox_env.build()
         
-        if success and run_tests:
-            print(f"\n🧪 Running tests...")
-            test_success, test_output = sandbox_env.test()
+        if success:
+            print(f"\n🚀 Running sandbox...")
+            run_success, run_output = sandbox_env.run()
             
-            # Save test results
-            test_report_path = pactfix_dir / 'test_results.txt'
-            with open(test_report_path, 'w') as f:
-                f.write(test_output)
-            print(f"   📋 Test results saved to: {test_report_path}")
+            # Save output
+            output_path = pactfix_dir / 'sandbox_output.txt'
+            with open(output_path, 'w') as f:
+                f.write(f"=== BUILD OUTPUT ===\n{build_output}\n\n")
+                f.write(f"=== RUN OUTPUT ===\n{run_output}\n")
+            
+            if run_tests:
+                print(f"\n🧪 Running tests...")
+                test_success, test_output = sandbox_env.test()
+                
+                test_report_path = pactfix_dir / 'test_results.txt'
+                with open(test_report_path, 'w') as f:
+                    f.write(test_output)
+                print(f"   📋 Test results saved to: {test_report_path}")
         
         print(f"\n✅ Sandbox ready in: {sandbox_env.sandbox_dir}")
         print(f"\nTo run manually:")
