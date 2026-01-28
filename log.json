@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-01-28T16:02:49.530259",
+  "input_file": "examples/python/faulty.py",
+  "output_file": "output.py",
+  "language": "python",
+  "errors_count": 3,
+  "warnings_count": 4,
+  "fixes_count": 3,
+  "errors": [
+    {
+      "line": 9,
+      "code": "PY001",
+      "message": "Użyj print() z nawiasami (Python 3)"
+    },
+    {
+      "line": 14,
+      "code": "PY001",
+      "message": "Użyj print() z nawiasami (Python 3)"
+    },
+    {
+      "line": 26,
+      "code": "PY001",
+      "message": "Użyj print() z nawiasami (Python 3)"
+    }
+  ],
+  "warnings": [
+    {
+      "line": 6,
+      "code": "PY003",
+      "message": "Mutable default argument"
+    },
+    {
+      "line": 8,
+      "code": "PY004",
+      "message": "Użyj \"is None\" zamiast == None"
+    },
+    {
+      "line": 13,
+      "code": "PY002",
+      "message": "Unikaj pustego except:"
+    },
+    {
+      "line": 25,
+      "code": "PY004",
+      "message": "Użyj \"is None\" zamiast == None"
+    }
+  ],
+  "fixes": [
+    {
+      "line": 9,
+      "message": "Dodano nawiasy do print()",
+      "before": "print \"Item is None\"",
+      "after": "print(\"Item is None\")"
+    },
+    {
+      "line": 14,
+      "message": "Dodano nawiasy do print()",
+      "before": "print \"Error processing item\"",
+      "after": "print(\"Error processing item\")"
+    },
+    {
+      "line": 26,
+      "message": "Dodano nawiasy do print()",
+      "before": "print \"No arguments\"",
+      "after": "print(\"No arguments\")"
+    }
+  ]
+}

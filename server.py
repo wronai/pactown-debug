@@ -574,10 +574,704 @@ def analyze_javascript_code(code: str) -> dict:
     }
 
 
-def detect_language(code: str) -> str:
+def analyze_dockerfile(code: str) -> dict:
+    """Analyze Dockerfile for common issues and best practices."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    has_user = False
+    has_healthcheck = False
+    last_cmd_line = 0
+    base_image = None
+    env_vars = set()
+    exposed_ports = set()
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        upper_line = stripped.upper()
+        
+        # Extract context
+        if upper_line.startswith('FROM '):
+            base_image = stripped[5:].strip().split()[0]
+            if ':latest' in base_image or (':' not in base_image and '@' not in base_image):
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'DOCKER001',
+                    'message': f'Użyj konkretnego tagu zamiast :latest dla obrazu {base_image}'
+                })
+        
+        if upper_line.startswith('USER '):
+            has_user = True
+        
+        if upper_line.startswith('HEALTHCHECK '):
+            has_healthcheck = True
+        
+        if upper_line.startswith('ENV '):
+            parts = stripped[4:].split('=')
+            if parts:
+                env_vars.add(parts[0].strip())
+        
+        if upper_line.startswith('EXPOSE '):
+            ports = stripped[7:].split()
+            exposed_ports.update(ports)
+        
+        # Check for RUN with apt-get without cleanup
+        if upper_line.startswith('RUN ') and 'apt-get install' in stripped:
+            if 'rm -rf /var/lib/apt/lists' not in stripped and '&&' not in stripped:
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'DOCKER002',
+                    'message': 'apt-get install bez czyszczenia cache - dodaj && rm -rf /var/lib/apt/lists/*'
+                })
+            if 'apt-get update' not in stripped:
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'DOCKER003',
+                    'message': 'apt-get install bez apt-get update w tej samej warstwie'
+                })
+        
+        # Check for ADD vs COPY
+        if upper_line.startswith('ADD ') and 'http' not in stripped and '.tar' not in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'DOCKER004',
+                'message': 'Użyj COPY zamiast ADD dla lokalnych plików (ADD ma dodatkowe funkcje)'
+            })
+        
+        # Check for COPY with --chown
+        if upper_line.startswith('COPY ') and '--chown' not in stripped and has_user:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'DOCKER005',
+                'message': 'Rozważ użycie COPY --chown=user:group dla poprawnych uprawnień'
+            })
+        
+        # Check for CMD/ENTRYPOINT format
+        if upper_line.startswith('CMD ') or upper_line.startswith('ENTRYPOINT '):
+            last_cmd_line = i
+            if not stripped.endswith(']') and '[' not in stripped:
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'DOCKER006',
+                    'message': 'Użyj formy exec (JSON array) zamiast shell form dla CMD/ENTRYPOINT'
+                })
+        
+        # Check for hardcoded secrets
+        secret_patterns = ['PASSWORD=', 'SECRET=', 'API_KEY=', 'TOKEN=', 'PRIVATE_KEY']
+        for pattern in secret_patterns:
+            if pattern in upper_line and 'ARG' not in upper_line:
+                errors.append({
+                    'line': i, 'column': 1, 'code': 'DOCKER007',
+                    'message': f'Możliwy hardcoded secret - użyj build args lub secrets'
+                })
+        
+        # Check for WORKDIR with relative path
+        if upper_line.startswith('WORKDIR ') and not stripped[8:].strip().startswith('/'):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'DOCKER008',
+                'message': 'WORKDIR powinien używać ścieżki absolutnej'
+            })
+    
+    # Context-based warnings
+    if not has_user:
+        warnings.append({
+            'line': 1, 'column': 1, 'code': 'DOCKER009',
+            'message': 'Brak instrukcji USER - kontener będzie działał jako root'
+        })
+    
+    if not has_healthcheck and base_image:
+        warnings.append({
+            'line': 1, 'column': 1, 'code': 'DOCKER010',
+            'message': 'Brak HEALTHCHECK - dodaj dla lepszego monitorowania kontenera'
+        })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes, 
+            'context': {'base_image': base_image, 'env_vars': list(env_vars), 'exposed_ports': list(exposed_ports)}}
+
+
+def analyze_docker_compose(code: str) -> dict:
+    """Analyze docker-compose.yml for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    services = []
+    current_service = None
+    current_indent = 0
+    has_networks = False
+    has_volumes_def = False
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip())
+        
+        # Track services
+        if stripped.startswith('services:'):
+            continue
+        if indent == 2 and stripped.endswith(':') and not stripped.startswith('-'):
+            current_service = stripped[:-1]
+            services.append(current_service)
+        
+        if 'networks:' in stripped and indent == 0:
+            has_networks = True
+        if stripped == 'volumes:' and indent == 0:
+            has_volumes_def = True
+        
+        # Check for latest tag
+        if 'image:' in stripped and (':latest' in stripped or (':' not in stripped.split('image:')[1])):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'COMPOSE001',
+                'message': 'Użyj konkretnego tagu wersji zamiast :latest'
+            })
+        
+        # Check for privileged mode
+        if 'privileged: true' in stripped:
+            errors.append({
+                'line': i, 'column': 1, 'code': 'COMPOSE002',
+                'message': 'privileged: true jest niebezpieczne - ogranicz capabilities'
+            })
+        
+        # Check for host network mode
+        if 'network_mode: host' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'COMPOSE003',
+                'message': 'network_mode: host omija izolację sieciową Dockera'
+            })
+        
+        # Check for bind mounts without read-only
+        if ':rw' in stripped or (stripped.startswith('- ') and ':/' in stripped and ':ro' not in stripped):
+            if '/var/run/docker.sock' in stripped:
+                errors.append({
+                    'line': i, 'column': 1, 'code': 'COMPOSE004',
+                    'message': 'Montowanie docker.sock daje pełny dostęp do Docker daemon'
+                })
+        
+        # Check for hardcoded secrets in environment
+        if 'environment:' in stripped or (stripped.startswith('- ') and '=' in stripped):
+            secret_patterns = ['PASSWORD=', 'SECRET=', 'API_KEY=', 'TOKEN=']
+            for pattern in secret_patterns:
+                if pattern in stripped.upper() and '${' not in stripped:
+                    errors.append({
+                        'line': i, 'column': 1, 'code': 'COMPOSE005',
+                        'message': 'Hardcoded secret - użyj secrets lub .env z ${VAR}'
+                    })
+        
+        # Check for missing restart policy
+        if 'restart:' in stripped:
+            pass  # Has restart policy
+        elif current_service and 'deploy:' not in stripped:
+            pass  # Will check at end
+        
+        # Check for missing healthcheck
+        if 'healthcheck:' in stripped:
+            pass
+        
+        # Check for missing resource limits
+        if 'mem_limit' in stripped or 'cpus:' in stripped or 'resources:' in stripped:
+            pass
+    
+    # Context-based suggestions
+    if len(services) > 1 and not has_networks:
+        warnings.append({
+            'line': 1, 'column': 1, 'code': 'COMPOSE006',
+            'message': f'Zdefiniuj custom networks dla izolacji {len(services)} serwisów'
+        })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes,
+            'context': {'services': services}}
+
+
+def analyze_sql(code: str) -> dict:
+    """Analyze SQL for common issues and security problems."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    tables_referenced = set()
+    tables_created = set()
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        upper_line = stripped.upper()
+        
+        # Track tables
+        if 'CREATE TABLE' in upper_line:
+            match = re.search(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\[]?(\w+)', upper_line)
+            if match:
+                tables_created.add(match.group(1).lower())
+        
+        if 'FROM ' in upper_line or 'JOIN ' in upper_line or 'INTO ' in upper_line or 'UPDATE ' in upper_line:
+            for match in re.finditer(r'(?:FROM|JOIN|INTO|UPDATE)\s+[`"\[]?(\w+)', upper_line):
+                tables_referenced.add(match.group(1).lower())
+        
+        # Check for SELECT *
+        if re.search(r'\bSELECT\s+\*', upper_line):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'SQL001',
+                'message': 'SELECT * - lepiej wymienić konkretne kolumny'
+            })
+        
+        # Check for SQL injection patterns
+        if re.search(r"['\"]?\s*\+\s*\w+\s*\+\s*['\"]?", stripped) or '%s' in stripped or '?' not in stripped:
+            if 'WHERE' in upper_line and ('=' in stripped or 'LIKE' in upper_line):
+                if "'" in stripped and '+' in stripped:
+                    errors.append({
+                        'line': i, 'column': 1, 'code': 'SQL002',
+                        'message': 'Możliwa podatność SQL injection - użyj prepared statements'
+                    })
+        
+        # Check for missing WHERE in UPDATE/DELETE
+        if ('UPDATE ' in upper_line or 'DELETE FROM' in upper_line) and 'WHERE' not in upper_line:
+            if ';' in stripped or i == len(lines):
+                errors.append({
+                    'line': i, 'column': 1, 'code': 'SQL003',
+                    'message': 'UPDATE/DELETE bez WHERE - to zmieni wszystkie rekordy!'
+                })
+        
+        # Check for DROP without IF EXISTS
+        if 'DROP ' in upper_line and 'IF EXISTS' not in upper_line:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'SQL004',
+                'message': 'DROP bez IF EXISTS - może wywołać błąd jeśli obiekt nie istnieje'
+            })
+        
+        # Check for CREATE without IF NOT EXISTS
+        if 'CREATE TABLE' in upper_line and 'IF NOT EXISTS' not in upper_line:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'SQL005',
+                'message': 'CREATE TABLE bez IF NOT EXISTS - może wywołać błąd'
+            })
+        
+        # Check for missing indexes hints
+        if 'ORDER BY' in upper_line or 'GROUP BY' in upper_line:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'SQL006',
+                'message': 'ORDER BY/GROUP BY - upewnij się że kolumny mają indeksy'
+            })
+        
+        # Check for GRANT ALL
+        if 'GRANT ALL' in upper_line:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'SQL007',
+                'message': 'GRANT ALL - przyznaj tylko wymagane uprawnienia'
+            })
+        
+        # Check for plain text passwords
+        if re.search(r"PASSWORD\s*[=:]\s*['\"][^'\"]+['\"]", upper_line):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'SQL008',
+                'message': 'Hasło w plain text - użyj hashowania'
+            })
+    
+    # Context: check for referenced but not created tables
+    missing_tables = tables_referenced - tables_created - {'dual', 'information_schema'}
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes,
+            'context': {'tables_created': list(tables_created), 'tables_referenced': list(tables_referenced),
+                       'potentially_missing': list(missing_tables)}}
+
+
+def analyze_terraform(code: str) -> dict:
+    """Analyze Terraform/HCL for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    resources = []
+    variables_defined = set()
+    variables_used = set()
+    providers = []
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Track resources
+        if stripped.startswith('resource "'):
+            match = re.search(r'resource\s+"([^"]+)"\s+"([^"]+)"', stripped)
+            if match:
+                resources.append({'type': match.group(1), 'name': match.group(2), 'line': i})
+        
+        # Track variables
+        if stripped.startswith('variable "'):
+            match = re.search(r'variable\s+"([^"]+)"', stripped)
+            if match:
+                variables_defined.add(match.group(1))
+        
+        # Track variable usage
+        for match in re.finditer(r'var\.(\w+)', stripped):
+            variables_used.add(match.group(1))
+        
+        # Track providers
+        if stripped.startswith('provider "'):
+            match = re.search(r'provider\s+"([^"]+)"', stripped)
+            if match:
+                providers.append(match.group(1))
+        
+        # Check for hardcoded credentials
+        if re.search(r'(access_key|secret_key|password|token)\s*=\s*"[^"$]', stripped, re.IGNORECASE):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'TF001',
+                'message': 'Hardcoded credentials - użyj zmiennych lub vault'
+            })
+        
+        # Check for missing version constraints
+        if 'required_providers' in stripped or stripped.startswith('provider "'):
+            pass  # Check in context
+        
+        # Check for public access
+        if 'cidr_blocks' in stripped and '0.0.0.0/0' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'TF002',
+                'message': '0.0.0.0/0 otwiera dostęp z całego internetu'
+            })
+        
+        # Check for unencrypted storage
+        if 'encrypted' in stripped and 'false' in stripped:
+            errors.append({
+                'line': i, 'column': 1, 'code': 'TF003',
+                'message': 'Wyłączone szyfrowanie - włącz encrypted = true'
+            })
+        
+        # Check for public S3 buckets
+        if 'acl' in stripped and ('public-read' in stripped or 'public-read-write' in stripped):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'TF004',
+                'message': 'Publiczny bucket S3 - rozważ prywatne ACL'
+            })
+        
+        # Check for missing tags
+        if stripped.startswith('resource "aws_') and 'tags' not in code[code.find(stripped):code.find(stripped)+500]:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'TF005',
+                'message': 'Brak tags dla zasobu AWS - dodaj tagi dla organizacji'
+            })
+    
+    # Context: undefined variables
+    undefined_vars = variables_used - variables_defined
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes,
+            'context': {'resources': resources, 'providers': providers,
+                       'variables_defined': list(variables_defined),
+                       'undefined_variables': list(undefined_vars)}}
+
+
+def analyze_kubernetes(code: str) -> dict:
+    """Analyze Kubernetes YAML for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    kind = None
+    has_resources = False
+    has_probes = False
+    has_security_context = False
+    namespace = None
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Track kind
+        if stripped.startswith('kind:'):
+            kind = stripped.split(':')[1].strip()
+        
+        # Track namespace
+        if stripped.startswith('namespace:'):
+            namespace = stripped.split(':')[1].strip()
+        
+        # Check for resources
+        if 'resources:' in stripped:
+            has_resources = True
+        if 'limits:' in stripped or 'requests:' in stripped:
+            has_resources = True
+        
+        # Check for probes
+        if 'livenessProbe:' in stripped or 'readinessProbe:' in stripped:
+            has_probes = True
+        
+        # Check for security context
+        if 'securityContext:' in stripped:
+            has_security_context = True
+        
+        # Check for privileged containers
+        if 'privileged: true' in stripped:
+            errors.append({
+                'line': i, 'column': 1, 'code': 'K8S001',
+                'message': 'Kontener privileged - poważne ryzyko bezpieczeństwa'
+            })
+        
+        # Check for running as root
+        if 'runAsUser: 0' in stripped or 'runAsRoot: true' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'K8S002',
+                'message': 'Kontener uruchamiany jako root'
+            })
+        
+        # Check for hostPath volumes
+        if 'hostPath:' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'K8S003',
+                'message': 'hostPath volume - rozważ PersistentVolume'
+            })
+        
+        # Check for latest tag
+        if 'image:' in stripped and (':latest' in stripped or ':' not in stripped.split('image:')[1]):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'K8S004',
+                'message': 'Użyj konkretnego tagu wersji zamiast :latest'
+            })
+        
+        # Check for missing image pull policy
+        if 'image:' in stripped and ':latest' in stripped:
+            if 'imagePullPolicy' not in code:
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'K8S005',
+                    'message': 'Brak imagePullPolicy - dla :latest ustaw Always'
+                })
+        
+        # Check for hardcoded secrets
+        if stripped.startswith('value:') and any(s in stripped.upper() for s in ['PASSWORD', 'SECRET', 'KEY', 'TOKEN']):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'K8S006',
+                'message': 'Hardcoded secret - użyj Secret resource'
+            })
+        
+        # Check for default namespace
+        if stripped == 'namespace: default':
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'K8S007',
+                'message': 'Użycie default namespace - utwórz dedykowany namespace'
+            })
+    
+    # Context-based warnings for Deployments/Pods
+    if kind in ('Deployment', 'Pod', 'StatefulSet', 'DaemonSet'):
+        if not has_resources:
+            warnings.append({
+                'line': 1, 'column': 1, 'code': 'K8S008',
+                'message': f'Brak resource limits/requests dla {kind}'
+            })
+        if not has_probes and kind != 'DaemonSet':
+            warnings.append({
+                'line': 1, 'column': 1, 'code': 'K8S009',
+                'message': f'Brak liveness/readiness probes dla {kind}'
+            })
+        if not has_security_context:
+            warnings.append({
+                'line': 1, 'column': 1, 'code': 'K8S010',
+                'message': f'Brak securityContext dla {kind}'
+            })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes,
+            'context': {'kind': kind, 'namespace': namespace}}
+
+
+def analyze_nginx_config(code: str) -> dict:
+    """Analyze nginx configuration for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    has_ssl = False
+    has_security_headers = False
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        if 'ssl_certificate' in stripped:
+            has_ssl = True
+        
+        if 'add_header' in stripped:
+            has_security_headers = True
+        
+        # Check for server_tokens
+        if 'server_tokens on' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'NGINX001',
+                'message': 'server_tokens on ujawnia wersję nginx - ustaw off'
+            })
+        
+        # Check for autoindex
+        if 'autoindex on' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'NGINX002',
+                'message': 'autoindex on może ujawnić strukturę katalogów'
+            })
+        
+        # Check for weak SSL protocols
+        if 'ssl_protocols' in stripped and ('SSLv3' in stripped or 'TLSv1 ' in stripped or 'TLSv1.0' in stripped):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'NGINX003',
+                'message': 'Słabe protokoły SSL - użyj TLSv1.2 TLSv1.3'
+            })
+        
+        # Check for root inside location
+        if stripped.startswith('root ') and 'location' in '\n'.join(lines[max(0,i-5):i]):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'NGINX004',
+                'message': 'root wewnątrz location może powodować problemy - użyj alias lub root w server'
+            })
+    
+    if has_ssl and not has_security_headers:
+        warnings.append({
+            'line': 1, 'column': 1, 'code': 'NGINX005',
+            'message': 'Brak security headers (HSTS, X-Frame-Options, etc.)'
+        })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes}
+
+
+def analyze_github_actions(code: str) -> dict:
+    """Analyze GitHub Actions workflow for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Check for @master/@main instead of version
+        if 'uses:' in stripped and ('@master' in stripped or '@main' in stripped):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'GHA001',
+                'message': 'Użyj konkretnej wersji/SHA zamiast @master/@main'
+            })
+        
+        # Check for pull_request_target
+        if 'pull_request_target' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'GHA002',
+                'message': 'pull_request_target może być niebezpieczne - uważaj na injection'
+            })
+        
+        # Check for hardcoded secrets
+        if re.search(r'(password|token|key|secret)\s*[:=]\s*["\'][^$\{]', stripped, re.IGNORECASE):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'GHA003',
+                'message': 'Hardcoded secret - użyj ${{ secrets.NAME }}'
+            })
+        
+        # Check for shell injection
+        if '${{' in stripped and ('github.event.' in stripped or 'inputs.' in stripped):
+            if 'run:' in stripped or (i > 1 and 'run:' in lines[i-2]):
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'GHA004',
+                    'message': 'Możliwy shell injection - użyj env variable zamiast inline'
+                })
+        
+        # Check for permissions
+        if 'permissions:' in stripped:
+            pass  # Good
+        elif stripped.startswith('jobs:'):
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'GHA005',
+                'message': 'Brak permissions - ustaw minimalne wymagane uprawnienia'
+            })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes}
+
+
+def analyze_ansible(code: str) -> dict:
+    """Analyze Ansible playbook for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Check for plain text passwords
+        if re.search(r'password\s*:\s*["\']?[^\$\{]', stripped, re.IGNORECASE):
+            errors.append({
+                'line': i, 'column': 1, 'code': 'ANS001',
+                'message': 'Plain text password - użyj ansible-vault'
+            })
+        
+        # Check for shell/command without changed_when
+        if stripped.startswith('- shell:') or stripped.startswith('- command:'):
+            if 'changed_when' not in '\n'.join(lines[i:min(i+5, len(lines))]):
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'ANS002',
+                    'message': 'shell/command bez changed_when - może dawać fałszywe "changed"'
+                })
+        
+        # Check for become without become_user
+        if 'become: true' in stripped or 'become: yes' in stripped:
+            if 'become_user' not in '\n'.join(lines[max(0,i-3):i+3]):
+                warnings.append({
+                    'line': i, 'column': 1, 'code': 'ANS003',
+                    'message': 'become bez become_user - domyślnie root'
+                })
+        
+        # Check for ignore_errors
+        if 'ignore_errors: true' in stripped or 'ignore_errors: yes' in stripped:
+            warnings.append({
+                'line': i, 'column': 1, 'code': 'ANS004',
+                'message': 'ignore_errors ukrywa błędy - użyj failed_when lub block/rescue'
+            })
+    
+    return {'errors': errors, 'warnings': warnings, 'fixes': fixes}
+
+
+def detect_language(code: str, filename: str = None) -> str:
     """Detect the programming language of the code."""
     lines = code.strip().split('\n')
     first_line = lines[0] if lines else ''
+    
+    # Check filename first for config files
+    if filename:
+        fn_lower = filename.lower()
+        if fn_lower == 'dockerfile' or fn_lower.endswith('/dockerfile'):
+            return 'dockerfile'
+        if fn_lower.endswith(('docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml')):
+            return 'docker-compose'
+        if fn_lower.endswith('.tf'):
+            return 'terraform'
+        if fn_lower.endswith('.sql'):
+            return 'sql'
+        if fn_lower.endswith(('nginx.conf', '.nginx')):
+            return 'nginx'
+        if fn_lower.endswith(('.yml', '.yaml')) and ('workflow' in fn_lower or '.github' in fn_lower):
+            return 'github-actions'
+        if fn_lower.endswith(('playbook.yml', 'playbook.yaml', 'ansible.yml')) or 'ansible' in fn_lower:
+            return 'ansible'
+    
+    # Detect by content patterns
+    # Dockerfile
+    if any(line.strip().upper().startswith(('FROM ', 'RUN ', 'COPY ', 'ENTRYPOINT ', 'CMD ')) for line in lines[:20]):
+        if 'FROM ' in code.upper():
+            return 'dockerfile'
+    
+    # Docker Compose
+    if 'services:' in code and ('image:' in code or 'build:' in code):
+        return 'docker-compose'
+    
+    # Kubernetes
+    if 'apiVersion:' in code and 'kind:' in code:
+        return 'kubernetes'
+    
+    # Terraform
+    if 'resource "' in code or 'provider "' in code or 'variable "' in code:
+        return 'terraform'
+    
+    # SQL
+    sql_keywords = ['SELECT ', 'INSERT ', 'UPDATE ', 'DELETE ', 'CREATE TABLE', 'DROP ', 'ALTER ']
+    if any(kw in code.upper() for kw in sql_keywords):
+        return 'sql'
+    
+    # GitHub Actions
+    if 'on:' in code and ('push:' in code or 'pull_request:' in code or 'workflow_dispatch:' in code):
+        if 'jobs:' in code or 'steps:' in code:
+            return 'github-actions'
+    
+    # Ansible
+    if '- hosts:' in code or '- name:' in code and ('tasks:' in code or 'become:' in code):
+        return 'ansible'
+    
+    # nginx
+    if 'server {' in code or 'location ' in code or 'upstream ' in code:
+        return 'nginx'
     
     # Check shebang
     if first_line.startswith('#!'):
@@ -650,9 +1344,9 @@ def detect_language(code: str) -> str:
     return 'bash'  # Default to bash
 
 
-def analyze_code_multi(code: str, force_language: str = None) -> dict:
+def analyze_code_multi(code: str, force_language: str = None, filename: str = None) -> dict:
     """Analyze code with automatic language detection."""
-    language = force_language or detect_language(code)
+    language = force_language or detect_language(code, filename)
     
     result = {
         'originalCode': code,
@@ -660,17 +1354,43 @@ def analyze_code_multi(code: str, force_language: str = None) -> dict:
         'errors': [],
         'warnings': [],
         'fixes': [],
-        'language': language
+        'language': language,
+        'context': {}
     }
     
     lang_result = None
     
-    if language == 'python':
-        lang_result = analyze_python_code(code)
-    elif language == 'php':
-        lang_result = analyze_php_code(code)
-    elif language in ('javascript', 'nodejs'):
-        lang_result = analyze_javascript_code(code)
+    # Config file analyzers
+    config_analyzers = {
+        'dockerfile': analyze_dockerfile,
+        'docker-compose': analyze_docker_compose,
+        'sql': analyze_sql,
+        'terraform': analyze_terraform,
+        'kubernetes': analyze_kubernetes,
+        'nginx': analyze_nginx_config,
+        'github-actions': analyze_github_actions,
+        'ansible': analyze_ansible,
+    }
+    
+    # Code analyzers
+    code_analyzers = {
+        'python': analyze_python_code,
+        'php': analyze_php_code,
+        'javascript': analyze_javascript_code,
+        'nodejs': analyze_javascript_code,
+    }
+    
+    if language in config_analyzers:
+        lang_result = config_analyzers[language](code)
+        result['errors'] = lang_result.get('errors', [])
+        result['warnings'] = lang_result.get('warnings', [])
+        result['fixes'] = lang_result.get('fixes', [])
+        result['context'] = lang_result.get('context', {})
+        result['fixedCode'] = code  # Config files usually don't have auto-fix
+        return result
+    
+    if language in code_analyzers:
+        lang_result = code_analyzers[language](code)
     else:
         # Use existing bash analysis
         bash_result = analyze_code(code)

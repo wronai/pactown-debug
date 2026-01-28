@@ -1,0 +1,9 @@
+FROM ubuntu
+RUN apt-get install -y python3
+ADD app.py /app/
+WORKDIR app
+ENV DATABASE_PASSWORD=secret123
+ENV API_TOKEN=abc123xyz
+COPY config.yml /app/
+CMD python3 app.py
+EXPOSE 8080

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DATABASE_PASSWORD
+          value: "secret123"
+        - name: API_KEY
+          value: "abcdefghijk"
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        volumeMounts:
+        - name: host-data
+          mountPath: /data
+      volumes:
+      - name: host-data
+        hostPath:
+          path: /var/data

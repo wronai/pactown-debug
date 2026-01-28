@@ -1,4 +1,4 @@
-"""Pactown Code Analyzer - Python CLI Package"""
+"""pactfix Code Analyzer - Python CLI Package"""
 
 __version__ = "1.0.0"
 

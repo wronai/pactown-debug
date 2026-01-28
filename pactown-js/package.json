@@ -4,7 +4,7 @@
   "description": "Pactown Code Analyzer - Multi-language code analysis and auto-fix",
   "main": "src/index.js",
   "bin": {
-    "pactown": "./bin/pactown.js"
+    "pactown": "bin/pactown.js"
   },
   "type": "module",
   "scripts": {

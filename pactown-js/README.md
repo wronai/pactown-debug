@@ -13,22 +13,22 @@ npm link  # For global CLI access
 
 ```bash
 # Analyze and fix a file
-pactown input.py -o output.py
+pactfix input.py -o output.py
 
 # Analyze with logs
-pactown script.sh --log-file analysis.json
+pactfix script.sh --log-file analysis.json
 
 # Force language detection
-pactown code.txt -l python
+pactfix code.txt -l python
 
 # JSON output
-pactown input.js --json
+pactfix input.js --json
 
 # Only analyze, don't write fixed file
-pactown input.php --no-fix
+pactfix input.php --no-fix
 
 # Verbose output
-pactown app.js -v
+pactfix app.js -v
 ```
 
 ## Supported Languages
@@ -42,7 +42,7 @@ pactown app.js -v
 ## Programmatic Usage
 
 ```javascript
-import { analyzeFile, analyzeCode } from 'pactown';
+import { analyzeFile, analyzeCode } from 'pactfix';
 
 // Analyze a file
 const result = analyzeFile('input.py', 'output.py');

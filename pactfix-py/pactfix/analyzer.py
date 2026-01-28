@@ -1,5 +1,5 @@
 """
-Pactown Code Analyzer - Core Analysis Engine
+pactfix Code Analyzer - Core Analysis Engine
 Analyzes code files for common issues across multiple languages.
 """
 

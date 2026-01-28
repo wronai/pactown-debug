@@ -1,4 +1,4 @@
-"""Entry point for python -m pactown"""
+"""Entry point for python -m pactfix"""
 from .cli import main
 
 if __name__ == '__main__':

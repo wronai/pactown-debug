@@ -24,7 +24,7 @@ docker-compose up --build
 
 # Lub bezpośrednio z Docker
 docker build -t pactown-live-debug .
-docker run -p 8080:8080 pactown-live-debug
+docker run -p 8080:8080 pactfix-live-debug
 ```
 
 Otwórz http://localhost:8080 w przeglądarce.

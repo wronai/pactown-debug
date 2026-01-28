@@ -1,5 +1,5 @@
 """
-Pactown Code Analyzer - Command Line Interface
+pactfix Code Analyzer - Command Line Interface
 """
 
 import argparse
@@ -20,14 +20,14 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    return logging.getLogger('pactown')
+    return logging.getLogger('pactfix')
 
 
 def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        prog='pactown',
-        description='Pactown Code Analyzer - Analyze and fix code issues'
+        prog='pactfix',
+        description='pactfix Code Analyzer - Analyze and fix code issues'
     )
     
     parser.add_argument(

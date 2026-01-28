@@ -1,0 +1,28 @@
+---
+- hosts: webservers
+  become: true
+  tasks:
+    - name: Install packages
+      apt:
+        name: nginx
+        state: present
+    
+    - name: Configure database
+      mysql_user:
+        name: app_user
+        password: "mypassword123"
+        priv: '*.*:ALL'
+    
+    - shell: cat /etc/passwd
+    
+    - command: ls -la /root
+    
+    - name: Run custom script
+      shell: ./deploy.sh
+      ignore_errors: true
+    
+    - name: Copy config
+      copy:
+        src: config.yml
+        dest: /etc/app/config.yml
+        mode: '0644'

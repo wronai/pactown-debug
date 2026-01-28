@@ -1,4 +1,4 @@
-# Pactown Code Analyzer (Python)
+# pactfix Code Analyzer (Python)
 
 Multi-language code analysis and auto-fix CLI tool.
 
@@ -12,19 +12,19 @@ pip install -e .
 
 ```bash
 # Analyze and fix a file
-pactown input.py -o output.py
+pactfix input.py -o output.py
 
 # Analyze with logs
-pactown script.sh --log-file analysis.json
+pactfix script.sh --log-file analysis.json
 
 # Force language detection
-pactown code.txt -l python
+pactfix code.txt -l python
 
 # JSON output
-pactown input.js --json
+pactfix input.js --json
 
 # Only analyze, don't write fixed file
-pactown input.php --no-fix
+pactfix input.php --no-fix
 ```
 
 ## Supported Languages
@@ -38,7 +38,7 @@ pactown input.php --no-fix
 ## Example
 
 ```bash
-pactown examples/python/faulty.py -o fixed.py --log-file log.json -v
+pactfix examples/python/faulty.py -o fixed.py --log-file log.json -v
 ```
 
 ## Output

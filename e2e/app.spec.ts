@@ -412,3 +412,172 @@ test.describe('API Tests', () => {
     expect(data.features.python_analysis).toBe(true);
   });
 });
+
+test.describe('Config File Analysis Tests', () => {
+  test('should analyze Dockerfile', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `FROM ubuntu
+RUN apt-get install -y python3
+ADD app.py /app/
+WORKDIR app
+ENV DATABASE_PASSWORD=secret123
+CMD python3 app.py`
+      }
+    });
+    
+    expect(response.ok()).toBeTruthy();
+    const data = await response.json();
+    
+    expect(data.language).toBe('dockerfile');
+    expect(data.warnings.some((w: any) => w.code === 'DOCKER001')).toBeTruthy(); // :latest
+    expect(data.errors.some((e: any) => e.code === 'DOCKER007')).toBeTruthy(); // hardcoded secret
+  });
+
+  test('should analyze docker-compose.yml', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `version: '3.8'
+services:
+  web:
+    image: nginx
+    privileged: true
+    environment:
+      - DATABASE_PASSWORD=secret`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('docker-compose');
+    expect(data.errors.some((e: any) => e.code === 'COMPOSE002')).toBeTruthy(); // privileged
+  });
+
+  test('should analyze SQL', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `SELECT * FROM users;
+UPDATE users SET status = 'active';
+DELETE FROM orders;
+DROP TABLE logs;`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('sql');
+    expect(data.warnings.some((w: any) => w.code === 'SQL001')).toBeTruthy(); // SELECT *
+    expect(data.errors.some((e: any) => e.code === 'SQL003')).toBeTruthy(); // UPDATE without WHERE
+  });
+
+  test('should analyze Terraform', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `provider "aws" {
+  access_key = "AKIAIOSFODNN7EXAMPLE"
+}
+
+resource "aws_security_group" "allow_all" {
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_s3_bucket" "data" {
+  acl = "public-read"
+}`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('terraform');
+    expect(data.errors.some((e: any) => e.code === 'TF001')).toBeTruthy(); // hardcoded creds
+    expect(data.warnings.some((w: any) => w.code === 'TF002')).toBeTruthy(); // 0.0.0.0/0
+  });
+
+  test('should analyze Kubernetes YAML', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest
+        securityContext:
+          privileged: true
+          runAsUser: 0`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('kubernetes');
+    expect(data.errors.some((e: any) => e.code === 'K8S001')).toBeTruthy(); // privileged
+    expect(data.warnings.some((w: any) => w.code === 'K8S007')).toBeTruthy(); // default namespace
+  });
+
+  test('should analyze nginx config', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `server {
+    listen 443 ssl;
+    server_tokens on;
+    autoindex on;
+    ssl_protocols SSLv3 TLSv1;
+}`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('nginx');
+    expect(data.warnings.some((w: any) => w.code === 'NGINX001')).toBeTruthy(); // server_tokens
+    expect(data.errors.some((e: any) => e.code === 'NGINX003')).toBeTruthy(); // weak SSL
+  });
+
+  test('should analyze GitHub Actions', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `name: CI
+on:
+  push:
+  pull_request_target:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - run: echo "API_KEY: hardcoded-key"`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('github-actions');
+    expect(data.warnings.some((w: any) => w.code === 'GHA001')).toBeTruthy(); // @master
+    expect(data.warnings.some((w: any) => w.code === 'GHA002')).toBeTruthy(); // pull_request_target
+  });
+
+  test('should analyze Ansible playbook', async ({ request }) => {
+    const response = await request.post('/api/analyze', {
+      data: {
+        code: `- hosts: webservers
+  become: true
+  tasks:
+    - name: Set password
+      mysql_user:
+        password: "mypassword123"
+    - shell: cat /etc/passwd
+    - command: ls -la
+      ignore_errors: true`
+      }
+    });
+    
+    const data = await response.json();
+    expect(data.language).toBe('ansible');
+    expect(data.errors.some((e: any) => e.code === 'ANS001')).toBeTruthy(); // plain text password
+    expect(data.warnings.some((w: any) => w.code === 'ANS004')).toBeTruthy(); // ignore_errors
+  });
+});
