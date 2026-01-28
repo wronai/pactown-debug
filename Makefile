@@ -4,7 +4,7 @@ SHELL := /bin/bash
 -include .env
 export
 
-.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish build-pactfix bump-patch clean docker-build docker-run docker-stop docker-clean down
+.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish build-pactfix bump-patch clean build run stop docker-build docker-run docker-stop docker-clean down
 
 PACTFIX_DIR ?= pactfix-py
 PORT ?= 8081
@@ -18,11 +18,15 @@ help:
 	@echo "  make test-sandbox-tests - run sandbox smoke test + run in-container test commands (--test)"
 	@echo "  make test-backend   - basic python syntax check for server.py"
 	@echo "  make publish        - build + upload python package pactfix (requires twine credentials)"
-	@echo "  make docker-build    - build Docker image for pactown-debug"
-	@echo "  make docker-run      - run Docker container (builds if needed)"
-	@echo "  make docker-stop     - stop and remove running container"
-	@echo "  make docker-clean    - remove Docker image and containers"
-	@echo "  make down            - stop and remove containers (alias for docker-clean)"
+	@echo "  make build          - build Docker image for pactown-debug"
+	@echo "  make run            - run Docker container (builds if needed)"
+	@echo "  make stop           - stop and remove running container"
+	@echo "  make clean          - remove python build/test artifacts"
+	@echo "  make docker-build   - build Docker image for pactown-debug"
+	@echo "  make docker-run     - run Docker container (builds if needed)"
+	@echo "  make docker-stop    - stop and remove running container"
+	@echo "  make docker-clean   - remove Docker image and containers"
+	@echo "  make down           - stop and remove containers (alias for docker-clean)"
 
 test: test-backend test-pactfix test-frontend
 
@@ -55,6 +59,25 @@ publish: bump-patch build-pactfix
 clean:
 	rm -rf dist build .pytest_cache test-results \
 		$(PACTFIX_DIR)/.pytest_cache $(PACTFIX_DIR)/dist $(PACTFIX_DIR)/build $(PACTFIX_DIR)/*.egg-info
+
+build:
+	docker build -t pactown-debug .
+
+run: build
+	@if ! docker ps -q -f name=pactown-debug | grep -q .; then \
+		docker run -d --name pactown-debug -p $(PORT):8080 --env-file .env --rm pactown-debug; \
+		echo "Container started: http://localhost:$(PORT)"; \
+	else \
+		echo "Container already running: http://localhost:$(PORT)"; \
+	fi
+
+stop:
+	@if docker ps -q -f name=pactown-debug | grep -q .; then \
+		docker stop pactown-debug; \
+		echo "Container stopped."; \
+	else \
+		echo "Container not running."; \
+	fi
 
 docker-build:
 	docker build -t pactown-debug .
