@@ -116,3 +116,50 @@ done
 
         errors = result.get("errors") or []
         self.assertTrue(any(e.get("code") == "SC1073" for e in errors))
+
+    def test_api_batch_analyze_scans_directory(self) -> None:
+        fixture_dir = self.repo_root / "tests" / "_batch_fixture"
+        fixture_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            (fixture_dir / "faulty.py").write_text('print "hello"\n', encoding="utf-8")
+            (fixture_dir / "ok.py").write_text('print("ok")\n', encoding="utf-8")
+
+            req = Request(
+                f"http://127.0.0.1:{self.port}/api/batch_analyze",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(
+                    {
+                        "root": "tests/_batch_fixture",
+                        "max_files": 20,
+                        "max_bytes": 50_000,
+                    }
+                ).encode("utf-8"),
+            )
+
+            with urlopen(req, timeout=10.0) as resp:
+                self.assertEqual(resp.status, 200)
+                payload = json.loads(resp.read().decode("utf-8"))
+
+            self.assertIn("totals", payload)
+            totals = payload["totals"]
+            self.assertGreaterEqual(int(totals.get("filesListed") or 0), 2)
+            self.assertGreaterEqual(int(totals.get("filesAnalyzed") or 0), 2)
+            self.assertGreaterEqual(int(totals.get("errors") or 0), 1)
+
+            files = payload.get("files") or []
+            self.assertTrue(any(f.get("path") == "tests/_batch_fixture/faulty.py" for f in files))
+            self.assertTrue(any(f.get("path") == "tests/_batch_fixture/ok.py" for f in files))
+            faulty = next(f for f in files if f.get("path") == "tests/_batch_fixture/faulty.py")
+            self.assertGreaterEqual(int(faulty.get("errors") or 0), 1)
+        finally:
+            for p in fixture_dir.glob("*"):
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
+            try:
+                fixture_dir.rmdir()
+            except Exception:
+                pass

@@ -1376,6 +1376,16 @@ def detect_language(code: str, filename: str = None) -> str:
     # Check filename first for config files
     if filename:
         fn_lower = filename.lower()
+        # Common code file extensions
+        if fn_lower.endswith('.py'):
+            return 'python'
+        if fn_lower.endswith(('.sh', '.bash', '.zsh', '.ksh')):
+            return 'bash'
+        if fn_lower.endswith('.php'):
+            return 'php'
+        if fn_lower.endswith(('.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx')):
+            return 'javascript'
+
         if fn_lower == 'dockerfile' or fn_lower.endswith('/dockerfile'):
             return 'dockerfile'
         if fn_lower.endswith(('docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml')):
