@@ -1,0 +1,8 @@
+image:
+  repository: nginx
+  tag: latest
+  imagePullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 80

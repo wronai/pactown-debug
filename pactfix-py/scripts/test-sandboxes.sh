@@ -176,7 +176,7 @@ echo "╚═══════════════════════�
 echo -e "${NC}"
 
 # Test each project
-PROJECTS=("python-project" "nodejs-project" "bash-project" "go-project" "dockerfile-project" "json-project" "toml-project" "ini-project")
+PROJECTS=("python-project" "nodejs-project" "bash-project" "go-project" "dockerfile-project" "json-project" "toml-project" "ini-project" "helm-project")
 
 for project in "${PROJECTS[@]}"; do
     test_project "$project" || true

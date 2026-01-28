@@ -15,6 +15,7 @@ from .css import analyze_css
 from .json_generic import analyze_json
 from .toml_generic import analyze_toml
 from .ini_generic import analyze_ini
+from .helm import analyze_helm
 
 __all__ = [
     'analyze_typescript',
@@ -32,4 +33,5 @@ __all__ = [
     'analyze_json',
     'analyze_toml',
     'analyze_ini',
+    'analyze_helm',
 ]

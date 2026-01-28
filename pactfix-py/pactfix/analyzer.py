@@ -1,5 +1,6 @@
 """Multi-language code and config file analyzer."""
 
+import ast
 import re
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Any, Optional
@@ -11,8 +12,8 @@ SUPPORTED_LANGUAGES = [
     'kubernetes', 'nginx', 'github-actions', 'ansible',
     'typescript', 'go', 'rust', 'java', 'csharp', 'ruby',
     'makefile', 'yaml', 'apache', 'systemd', 'html', 'css',
-    'json', 'toml', 'ini'
-]
+    'json', 'toml', 'ini',
+    'helm']
 
 @dataclass
 class Issue:
@@ -28,6 +29,7 @@ class Fix:
     description: str
     before: str
     after: str
+    edits: List[Dict[str, Any]] = field(default_factory=list)
 
 @dataclass
 class AnalysisResult:
@@ -74,6 +76,12 @@ def detect_language(code: str, filename: str = None) -> str:
             return 'github-actions'
         if any(x in fn_lower for x in ['playbook', 'ansible']):
             return 'ansible'
+        if fn_name in ('chart.yaml', 'chart.yml', 'values.yaml', 'values.yml'):
+            return 'helm'
+        if '/templates/' in fn_lower and fn_lower.endswith(('.yml', '.yaml')):
+            return 'helm'
+        if fn_lower.endswith(('.tpl', '.gotmpl')):
+            return 'helm'
         if fn_lower.endswith(('.yml', '.yaml')):
             return 'yaml'
         if fn_lower.endswith('.py'):
@@ -138,6 +146,9 @@ def detect_language(code: str, filename: str = None) -> str:
     
     if '- hosts:' in code or ('- name:' in code and 'tasks:' in code):
         return 'ansible'
+
+    if '{{' in code and '}}' in code and ('.Values' in code or '.Release' in code or '.Chart' in code):
+        return 'helm'
     
     if 'server {' in code or 'location ' in code:
         return 'nginx'
@@ -260,6 +271,7 @@ def add_fix_comments(result: AnalysisResult) -> str:
         'ruby': '#',
         'makefile': '#',
         'yaml': '#',
+        'helm': '#',
         'toml': '#',
         'ini': ';',
         'apache': '#',
@@ -302,6 +314,48 @@ def add_fix_comments(result: AnalysisResult) -> str:
         lines.insert(idx, comment_line)
 
     return '\n'.join(lines)
+
+
+def _apply_edits_to_lines(lines: List[str], edits: List[Dict[str, Any]]) -> List[str]:
+    if not edits:
+        return lines
+
+    sorted_edits = sorted(
+        edits,
+        key=lambda e: (-(int(e.get('startLine') or 0)), -(int(e.get('endLine') or 0))),
+    )
+
+    out = list(lines)
+    for e in sorted_edits:
+        try:
+            start_line = int(e.get('startLine'))
+            end_line = int(e.get('endLine'))
+        except Exception:
+            continue
+
+        replacement = '' if e.get('replacement') is None else str(e.get('replacement'))
+        replacement_lines = [] if replacement == '' else replacement.split('\n')
+
+        start_idx = start_line - 1
+        if start_idx < 0 or start_idx > len(out):
+            continue
+
+        if end_line < start_line:
+            out[start_idx:start_idx] = replacement_lines
+            continue
+
+        end_idx = end_line - 1
+        delete_count = max(0, min(len(out) - start_idx, end_idx - start_idx + 1))
+
+        if e.get('preserveIndent') and delete_count == 1 and len(replacement_lines) == 1:
+            indent_match = re.match(r'^\s*', out[start_idx] if start_idx < len(out) else '')
+            indent = indent_match.group(0) if indent_match else ''
+            without_indent = re.sub(r'^\s*', '', replacement_lines[0])
+            replacement_lines = [indent + without_indent]
+
+        out[start_idx:start_idx + delete_count] = replacement_lines
+
+    return out
 
 
 def _brace_unbraced_bash_vars(line: str) -> str:
@@ -452,6 +506,29 @@ def analyze_python(code: str) -> AnalysisResult:
         code_part, comment_part = _split_python_comment(current_line)
         code_stripped = code_part.strip()
         in_condition_stmt = code_stripped.startswith(('if ', 'elif ', 'while ', 'assert '))
+
+        if re.match(r'^\s*def\s+\w+\s*\(', current_line):
+            next_non_empty = ''
+            next_idx = i
+            while next_idx < len(fixed_lines):
+                probe = fixed_lines[next_idx]
+                if probe.strip() != '':
+                    next_non_empty = probe.strip()
+                    break
+                next_idx += 1
+            if next_non_empty and not next_non_empty.startswith(('"""', "'''")):
+                warnings.append(Issue(i, 1, 'PY006', 'Funkcja nie ma docstringa'))
+                def_indent_match = re.match(r'^\s*', current_line)
+                def_indent = def_indent_match.group(0) if def_indent_match else ''
+                body_indent = def_indent + '    '
+                if next_idx < len(fixed_lines):
+                    probe_indent_match = re.match(r'^\s*', fixed_lines[next_idx])
+                    probe_indent = probe_indent_match.group(0) if probe_indent_match else ''
+                    if len(probe_indent) > len(def_indent):
+                        body_indent = probe_indent
+                doc_line = f'{body_indent}"""TODO: docstring."""'
+                edit = {'startLine': i + 1, 'endLine': i, 'replacement': doc_line}
+                fixes.append(Fix(i, 'Dodano szablon docstringa', current_line.strip(), '', edits=[edit]))
         
         # Python 2 print statement
         if re.match(r'^print\s+["\']', stripped) or re.match(r'^print\s+\w', stripped):
@@ -483,6 +560,55 @@ def analyze_python(code: str) -> AnalysisResult:
         # Mutable default argument
         if re.search(r'def\s+\w+\s*\([^)]*=\s*(\[\]|\{\})', stripped):
             warnings.append(Issue(i, 1, 'PY003', 'Mutable default argument - użyj None'))
+            m = re.match(r'^(\s*def\s+\w+\s*\()(?P<args>[^)]*)(\)\s*:.*)$', current_line)
+            if m:
+                args = m.group('args')
+                arg_match = re.search(r'(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<lit>\[\]|\{\})', args)
+                if arg_match:
+                    name = arg_match.group('name')
+                    lit = arg_match.group('lit')
+                    new_args = args.replace(arg_match.group(0), f"{name}=None")
+                    new_def_line = current_line.replace(args, new_args)
+
+                    next_line = fixed_lines[i] if i < len(fixed_lines) else ''
+                    if re.search(rf'^\s*if\s+{re.escape(name)}\s+is\s+None\s*:', next_line or ''):
+                        pass
+                    else:
+                        def_indent_match = re.match(r'^\s*', current_line)
+                        def_indent = def_indent_match.group(0) if def_indent_match else ''
+                        body_indent = def_indent + '    '
+                        for j in range(i, len(fixed_lines)):
+                            probe = fixed_lines[j]
+                            if probe.strip() == '':
+                                continue
+                            probe_indent_match = re.match(r'^\s*', probe)
+                            probe_indent = probe_indent_match.group(0) if probe_indent_match else ''
+                            if len(probe_indent) > len(def_indent):
+                                body_indent = probe_indent
+                            break
+
+                        init_line = f"{body_indent}if {name} is None: {name} = {lit}"
+                        fixes.append(
+                            Fix(
+                                i,
+                                f'Zmieniono mutable default argument {name} na None',
+                                current_line.strip(),
+                                new_def_line.strip(),
+                                edits=[
+                                    {
+                                        'startLine': i,
+                                        'endLine': i,
+                                        'replacement': new_def_line,
+                                        'preserveIndent': True,
+                                    },
+                                    {
+                                        'startLine': i + 1,
+                                        'endLine': i,
+                                        'replacement': init_line,
+                                    },
+                                ],
+                            )
+                        )
         
         # == None instead of is None
         if in_condition_stmt and ('== None' in code_part or '!= None' in code_part):
@@ -539,7 +665,43 @@ def analyze_python(code: str) -> AnalysisResult:
                 code_part, comment_part = _split_python_comment(current_line)
                 code_stripped = code_part.strip()
                 stripped = current_line.strip()
-     
+
+    try:
+        tree = ast.parse('\n'.join(fixed_lines))
+        used_names: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                used_names.add(node.id)
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import) and getattr(node, 'lineno', None):
+                if len(node.names) != 1:
+                    continue
+                alias = node.names[0]
+                imported = alias.asname or alias.name.split('.')[0]
+                if imported in used_names:
+                    continue
+                line_no = int(node.lineno)
+                before_line = fixed_lines[line_no - 1] if 0 < line_no <= len(fixed_lines) else ''
+                warnings.append(Issue(line_no, 1, 'PY005', f'Import "{imported}" może być nieużywany'))
+                edit = {'startLine': line_no, 'endLine': line_no, 'replacement': ''}
+                fixes.append(Fix(line_no, f'Usunięto nieużywany import: {imported}', before_line.strip(), '', edits=[edit]))
+
+            if isinstance(node, ast.ImportFrom) and getattr(node, 'lineno', None):
+                if len(node.names) != 1:
+                    continue
+                alias = node.names[0]
+                imported = alias.asname or alias.name
+                if imported in used_names:
+                    continue
+                line_no = int(node.lineno)
+                before_line = fixed_lines[line_no - 1] if 0 < line_no <= len(fixed_lines) else ''
+                warnings.append(Issue(line_no, 1, 'PY005', f'Import "{imported}" może być nieużywany'))
+                edit = {'startLine': line_no, 'endLine': line_no, 'replacement': ''}
+                fixes.append(Fix(line_no, f'Usunięto nieużywany import: {imported}', before_line.strip(), '', edits=[edit]))
+    except Exception:
+        pass
+
     return AnalysisResult('python', code, '\n'.join(fixed_lines), errors, warnings, fixes)
 
 
@@ -981,6 +1143,7 @@ try:
     from .analyzers.systemd import analyze_systemd
     from .analyzers.html import analyze_html
     from .analyzers.css import analyze_css
+    from .analyzers.helm import analyze_helm
     from .analyzers.json_generic import analyze_json
     from .analyzers.toml_generic import analyze_toml
     from .analyzers.ini_generic import analyze_ini
@@ -1024,6 +1187,7 @@ def analyze_code(code: str, filename: str = None, force_language: str = None) ->
             'systemd': analyze_systemd,
             'html': analyze_html,
             'css': analyze_css,
+            'helm': analyze_helm,
             'json': analyze_json,
             'toml': analyze_toml,
             'ini': analyze_ini,
