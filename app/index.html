@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pactown Live Debug</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-red: #ff3366;
+            --accent-green: #00ff88;
+            --accent-blue: #00aaff;
+            --accent-yellow: #ffcc00;
+            --accent-purple: #aa66ff;
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888aa;
+            --text-muted: #555566;
+            --border-color: #2a2a3a;
+            --error-bg: rgba(255, 51, 102, 0.1);
+            --success-bg: rgba(0, 255, 136, 0.1);
+            --warning-bg: rgba(255, 204, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 170, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 170, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            box-shadow: 0 0 30px rgba(0, 170, 255, 0.3);
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo span {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--accent-green); }
+            50% { opacity: 0.5; box-shadow: 0 0 5px var(--accent-green); }
+        }
+
+        /* Main editor area */
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            flex: 1;
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .panel.input::before {
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-yellow));
+        }
+
+        .panel.output::before {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .panel-title-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .panel.input .panel-title-icon {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--accent-red);
+        }
+
+        .panel.output .panel-title-icon {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green), #00cc70);
+            color: var(--bg-primary);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        /* Code editor */
+        .code-area {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .line-numbers {
+            padding: 20px 15px;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid var(--border-color);
+            min-width: 50px;
+        }
+
+        .code-input {
+            flex: 1;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .code-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .code-output {
+            flex: 1;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Syntax highlighting */
+        .code-line {
+            display: block;
+            padding: 2px 0;
+        }
+
+        .code-line.error {
+            background: var(--error-bg);
+            border-left: 3px solid var(--accent-red);
+            margin-left: -20px;
+            padding-left: 17px;
+        }
+
+        .code-line.fixed {
+            background: var(--success-bg);
+            border-left: 3px solid var(--accent-green);
+            margin-left: -20px;
+            padding-left: 17px;
+        }
+
+        .code-line.warning {
+            background: var(--warning-bg);
+            border-left: 3px solid var(--accent-yellow);
+            margin-left: -20px;
+            padding-left: 17px;
+        }
+
+        .comment {
+            color: var(--accent-green);
+            font-style: italic;
+        }
+
+        .keyword {
+            color: var(--accent-purple);
+        }
+
+        .string {
+            color: var(--accent-yellow);
+        }
+
+        .variable {
+            color: var(--accent-blue);
+        }
+
+        .command {
+            color: var(--accent-red);
+        }
+
+        /* Error annotations */
+        .error-annotation {
+            display: block;
+            color: var(--accent-red);
+            font-size: 12px;
+            padding: 5px 0 5px 25px;
+            background: var(--error-bg);
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .fix-annotation {
+            display: block;
+            color: var(--accent-green);
+            font-size: 12px;
+            padding: 5px 0 5px 25px;
+            background: var(--success-bg);
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        /* History panel */
+        .history-panel {
+            margin-top: 30px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .history-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .history-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            min-width: 80px;
+        }
+
+        .history-type {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .history-type.fix {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .history-type.error {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--accent-red);
+        }
+
+        .history-type.warning {
+            background: rgba(255, 204, 0, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .history-message {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .history-message code {
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            padding: 15px 25px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-value.errors {
+            color: var(--accent-red);
+        }
+
+        .stat-value.fixed {
+            color: var(--accent-green);
+        }
+
+        .stat-value.warnings {
+            color: var(--accent-yellow);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .analyzing .spinner {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .panel {
+                min-height: 400px;
+            }
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <div>
+                    <h1>Pactown Live Debug</h1>
+                    <span>Real-time Bash & Shell Script Analyzer</span>
+                </div>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>ShellCheck Active</span>
+            </div>
+        </header>
+
+        <div class="editor-container">
+            <!-- Input Panel -->
+            <div class="panel input">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">📝</div>
+                        <span>Wejście - Wklej kod z błędami</span>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-secondary" onclick="clearInput()">
+                            🗑️ Wyczyść
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadExample()">
+                            📋 Bash
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadPythonExample()">
+                            🐍 Python
+                        </button>
+                    </div>
+                </div>
+                <div class="code-area">
+                    <div class="line-numbers" id="inputLineNumbers">1</div>
+                    <textarea 
+                        class="code-input" 
+                        id="codeInput" 
+                        placeholder="Wklej swój skrypt Bash tutaj...&#10;&#10;Błędy zostaną automatycznie wykryte i naprawione."
+                        spellcheck="false"
+                    ></textarea>
+                </div>
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span>Linie:</span>
+                        <span class="stat-value" id="lineCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Znaki:</span>
+                        <span class="stat-value" id="charCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <div class="spinner"></div>
+                        <span id="analyzeStatus">Gotowy do analizy</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="panel output">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">✅</div>
+                        <span>Wyjście - Poprawiony kod</span>
+                        <span id="languageBadge" class="language-badge" style="display:none; margin-left: 10px; padding: 4px 8px; background: var(--bg-primary); border-radius: 4px; font-size: 12px; color: var(--accent-blue);"></span>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-secondary" onclick="copyOutput()">
+                            📋 Kopiuj
+                        </button>
+                        <button class="btn btn-success" onclick="downloadOutput()">
+                            ⬇️ Pobierz
+                        </button>
+                    </div>
+                </div>
+                <div class="code-area">
+                    <div class="line-numbers" id="outputLineNumbers">1</div>
+                    <div class="code-output" id="codeOutput">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <p>Wklej kod w lewym panelu, aby zobaczyć analizę i poprawki w czasie rzeczywistym.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span>Błędy:</span>
+                        <span class="stat-value errors" id="errorCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Naprawione:</span>
+                        <span class="stat-value fixed" id="fixedCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Ostrzeżenia:</span>
+                        <span class="stat-value warnings" id="warningCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="history-panel">
+            <div class="history-header">
+                <div class="history-title">
+                    <span>📜</span>
+                    <span>Historia zmian</span>
+                </div>
+                <button class="btn btn-secondary" onclick="clearHistory()">
+                    🗑️ Wyczyść historię
+                </button>
+            </div>
+            <div class="history-content" id="historyContent">
+                <div class="empty-state" style="padding: 40px;">
+                    <p>Historia zmian pojawi się tutaj po analizie kodu.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // State
+        let history = [];
+        let debounceTimer = null;
+        let lastAnalysis = null;
+
+        // Elements
+        const codeInput = document.getElementById('codeInput');
+        const codeOutput = document.getElementById('codeOutput');
+        const inputLineNumbers = document.getElementById('inputLineNumbers');
+        const outputLineNumbers = document.getElementById('outputLineNumbers');
+        const historyContent = document.getElementById('historyContent');
+
+        // Initialize
+        codeInput.addEventListener('input', handleInput);
+        codeInput.addEventListener('scroll', syncScroll);
+
+        function handleInput() {
+            updateStats();
+            updateLineNumbers();
+            
+            // Debounce analysis
+            clearTimeout(debounceTimer);
+            document.querySelector('.stats-bar').classList.add('analyzing');
+            document.getElementById('analyzeStatus').textContent = 'Analizowanie...';
+            
+            debounceTimer = setTimeout(() => {
+                analyzeCode();
+            }, 300);
+        }
+
+        function updateStats() {
+            const code = codeInput.value;
+            const lines = code.split('\n').length;
+            document.getElementById('lineCount').textContent = lines;
+            document.getElementById('charCount').textContent = code.length;
+        }
+
+        function updateLineNumbers() {
+            const code = codeInput.value;
+            const lines = code.split('\n').length;
+            let numbers = '';
+            for (let i = 1; i <= lines; i++) {
+                numbers += i + '\n';
+            }
+            inputLineNumbers.textContent = numbers || '1';
+        }
+
+        function syncScroll() {
+            inputLineNumbers.scrollTop = codeInput.scrollTop;
+        }
+
+        async function analyzeCode() {
+            const code = codeInput.value.trim();
+            
+            if (!code) {
+                codeOutput.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <p>Wklej kod w lewym panelu, aby zobaczyć analizę i poprawki w czasie rzeczywistym.</p>
+                    </div>
+                `;
+                outputLineNumbers.textContent = '1';
+                document.getElementById('errorCount').textContent = '0';
+                document.getElementById('fixedCount').textContent = '0';
+                document.getElementById('warningCount').textContent = '0';
+                document.querySelector('.stats-bar').classList.remove('analyzing');
+                document.getElementById('analyzeStatus').textContent = 'Gotowy do analizy';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                const result = await response.json();
+                
+                displayResult(result);
+                updateHistory(result);
+                
+                document.getElementById('errorCount').textContent = result.errors?.length || 0;
+                document.getElementById('fixedCount').textContent = result.fixes?.length || 0;
+                document.getElementById('warningCount').textContent = result.warnings?.length || 0;
+                
+                // Show detected language
+                const langBadge = document.getElementById('languageBadge');
+                if (result.language) {
+                    langBadge.textContent = result.language.toUpperCase();
+                    langBadge.style.display = 'inline';
+                } else {
+                    langBadge.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showToast('Błąd połączenia z serwerem', 'error');
+            }
+            
+            document.querySelector('.stats-bar').classList.remove('analyzing');
+            document.getElementById('analyzeStatus').textContent = 'Analiza zakończona';
+        }
+
+        function displayResult(result) {
+            if (!result.fixedCode) {
+                codeOutput.innerHTML = '<div class="empty-state"><p>Brak poprawek do wyświetlenia</p></div>';
+                return;
+            }
+
+            let html = '';
+            let lineNumber = 1;
+            const lines = result.fixedCode.split('\n');
+            
+            // Create line number column
+            let lineNums = '';
+            
+            lines.forEach((line, index) => {
+                const lineNum = index + 1;
+                lineNums += lineNum + '\n';
+                
+                // Check if this line has an error
+                const error = result.errors?.find(e => e.line === lineNum);
+                const fix = result.fixes?.find(f => f.line === lineNum);
+                const warning = result.warnings?.find(w => w.line === lineNum);
+                
+                let lineClass = '';
+                if (fix) lineClass = 'fixed';
+                else if (error) lineClass = 'error';
+                else if (warning) lineClass = 'warning';
+                
+                // Syntax highlight the line
+                const highlighted = highlightSyntax(line);
+                
+                html += `<span class="code-line ${lineClass}">${highlighted}</span>\n`;
+                
+                // Add annotation if there's a fix
+                if (fix && fix.message) {
+                    html += `<span class="fix-annotation">✅ ${escapeHtml(fix.message)}</span>\n`;
+                }
+                
+                // Add error annotation
+                if (error && error.message && !fix) {
+                    html += `<span class="error-annotation">❌ ${escapeHtml(error.message)}</span>\n`;
+                }
+                
+                // Add warning annotation
+                if (warning && warning.message) {
+                    html += `<span class="error-annotation" style="color: var(--accent-yellow); background: var(--warning-bg);">⚠️ ${escapeHtml(warning.message)}</span>\n`;
+                }
+            });
+            
+            outputLineNumbers.textContent = lineNums;
+            codeOutput.innerHTML = html;
+        }
+
+        function highlightSyntax(line) {
+            let escaped = escapeHtml(line);
+            
+            // Comments
+            escaped = escaped.replace(/(#.*)$/gm, '<span class="comment">$1</span>');
+            
+            // Keywords
+            const keywords = ['if', 'then', 'else', 'elif', 'fi', 'for', 'do', 'done', 'while', 'until', 'case', 'esac', 'function', 'return', 'local', 'export', 'source', 'in'];
+            keywords.forEach(kw => {
+                const regex = new RegExp(`\\b(${kw})\\b`, 'g');
+                escaped = escaped.replace(regex, '<span class="keyword">$1</span>');
+            });
+            
+            // Strings
+            escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, '<span class="string">$1</span>');
+            escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="string">$1</span>');
+            
+            // Variables
+            escaped = escaped.replace(/(\$\{[^}]+\}|\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span class="variable">$1</span>');
+            
+            // Commands at start
+            escaped = escaped.replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_-]*)/, '$1<span class="command">$2</span>');
+            
+            return escaped;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateHistory(result) {
+            const timestamp = new Date().toLocaleTimeString('pl-PL');
+            
+            // Add errors to history
+            result.errors?.forEach(error => {
+                history.unshift({
+                    time: timestamp,
+                    type: 'error',
+                    message: `Linia ${error.line}: ${error.message}`,
+                    code: error.code
+                });
+            });
+            
+            // Add fixes to history
+            result.fixes?.forEach(fix => {
+                history.unshift({
+                    time: timestamp,
+                    type: 'fix',
+                    message: `Linia ${fix.line}: ${fix.message}`,
+                    before: fix.before,
+                    after: fix.after
+                });
+            });
+            
+            // Add warnings to history
+            result.warnings?.forEach(warning => {
+                history.unshift({
+                    time: timestamp,
+                    type: 'warning',
+                    message: `Linia ${warning.line}: ${warning.message}`,
+                    code: warning.code
+                });
+            });
+            
+            // Keep only last 50 items
+            history = history.slice(0, 50);
+            
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (history.length === 0) {
+                historyContent.innerHTML = `
+                    <div class="empty-state" style="padding: 40px;">
+                        <p>Historia zmian pojawi się tutaj po analizie kodu.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            history.forEach((item, index) => {
+                html += `
+                    <div class="history-item" onclick="showHistoryDetail(${index})">
+                        <span class="history-time">${item.time}</span>
+                        <span class="history-type ${item.type}">${item.type === 'fix' ? 'Naprawiono' : item.type === 'error' ? 'Błąd' : 'Ostrzeżenie'}</span>
+                        <span class="history-message">${escapeHtml(item.message)}</span>
+                    </div>
+                `;
+            });
+            
+            historyContent.innerHTML = html;
+        }
+
+        function showHistoryDetail(index) {
+            const item = history[index];
+            if (item.before && item.after) {
+                showToast(`Zmieniono: "${item.before}" → "${item.after}"`, 'success');
+            }
+        }
+
+        function clearInput() {
+            codeInput.value = '';
+            handleInput();
+        }
+
+        function loadExample() {
+            codeInput.value = `#!/usr/bin/bash
+OUTPUT=/home/student/output-
+
+for HOST in server{a,b}; do
+    if test -f \${OUTPUT}\${HOST}; then
+        rm -v \${OUTPUT}\${HOST}
+    fi
+    echo "$(ssh student@\${HOST} hostname -f") >> \${OUTPUT}\${HOST}
+    echo "#####"
+    ssh student@\${HOST} lscpu | grep "^CPU" >> \${OUTPUT}\${HOST}
+done
+
+echo "Zakończono"`;
+            handleInput();
+        }
+
+        function loadPythonExample() {
+            codeInput.value = `#!/usr/bin/env python3
+import os
+import sys
+
+def process_data(items=[]):
+    for item in items:
+        if item == None:
+            print "Item is None"
+            continue
+        try:
+            result = item * 2
+        except:
+            print "Error processing item"
+    return items
+
+if __name__ == "__main__":
+    data = [1, 2, None, 4]
+    process_data(data)`;
+            handleInput();
+        }
+
+        async function copyOutput() {
+            const text = codeOutput.textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('Skopiowano do schowka!', 'success');
+            } catch (err) {
+                showToast('Błąd kopiowania', 'error');
+            }
+        }
+
+        function downloadOutput() {
+            const text = codeOutput.textContent;
+            if (!text || text.includes('Wklej kod')) {
+                showToast('Brak kodu do pobrania', 'error');
+                return;
+            }
+            
+            const blob = new Blob([text], { type: 'text/x-shellscript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fixed-script.sh';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Pobieranie rozpoczęte!', 'success');
+        }
+
+        function clearHistory() {
+            history = [];
+            renderHistory();
+            showToast('Historia wyczyszczona', 'success');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initial state
+        updateStats();
+        updateLineNumbers();
+    </script>
+</body>
+</html>

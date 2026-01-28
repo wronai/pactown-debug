@@ -1,0 +1,30 @@
+# Pactown Live Debug - Docker Compose
+# Run: docker-compose up --build
+
+version: '3.8'
+
+services:
+  pactown-debug:
+    build: .
+    container_name: pactown-live-debug
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Optional: mount local app directory for development
+    # volumes:
+    #   - ./app:/app:ro
+    networks:
+      - pactown-network
+
+networks:
+  pactown-network:
+    driver: bridge
