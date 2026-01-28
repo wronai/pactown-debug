@@ -844,23 +844,6 @@
                     <p>Historia zmian pojawi się tutaj po analizie kodu.</p>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <script>
-        // State
-        let history = [];
-        let debounceTimer = null;
-        let lastAnalysis = null;
-        let currentMode = 'code';
-        let outputView = 'code';
-
-        // Elements
-        const codeInput = document.getElementById('codeInput');
-        const codeOutput = document.getElementById('codeOutput');
-        const inputLineNumbers = document.getElementById('inputLineNumbers');
         const outputLineNumbers = document.getElementById('outputLineNumbers');
         const historyContent = document.getElementById('historyContent');
         const inputTitleText = document.getElementById('inputTitleText');
@@ -873,6 +856,9 @@
         // Initialize
         codeInput.addEventListener('input', handleInput);
         codeInput.addEventListener('scroll', syncScroll);
+        window.addEventListener('hashchange', () => {
+            loadFromHash();
+        });
 
         function setMode(mode) {
             currentMode = mode === 'markdown' ? 'markdown' : 'code';
@@ -909,6 +895,7 @@
         function handleInput() {
             updateStats();
             updateLineNumbers();
+            scheduleShareUpdate();
             
             // Debounce analysis
             clearTimeout(debounceTimer);
@@ -944,6 +931,84 @@
 
         function syncScroll() {
             inputLineNumbers.scrollTop = codeInput.scrollTop;
+        }
+
+        function getHashId() {
+            const raw = (window.location.hash || '').replace(/^#/, '').trim();
+            if (/^[a-fA-F0-9]{64}$/.test(raw)) return raw.toLowerCase();
+            return null;
+        }
+
+        function setHashId(id) {
+            if (!id) return;
+            const next = `${window.location.pathname}${window.location.search}#${id}`;
+            history.replaceState(null, '', next);
+        }
+
+        function clearHashId() {
+            const next = `${window.location.pathname}${window.location.search}`;
+            history.replaceState(null, '', next);
+        }
+
+        function scheduleShareUpdate() {
+            if (isLoadingFromHash) return;
+            clearTimeout(shareDebounceTimer);
+            shareDebounceTimer = setTimeout(() => {
+                persistSnippet();
+            }, 800);
+        }
+
+        async function persistSnippet() {
+            if (isLoadingFromHash) return;
+            const raw = codeInput.value;
+            const trimmed = raw.trim();
+            if (!trimmed) {
+                currentSnippetId = null;
+                clearHashId();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/snippet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: raw, mode: currentMode })
+                });
+                const data = await response.json();
+                const id = data && typeof data.id === 'string' ? data.id : null;
+                if (id && id !== currentSnippetId) {
+                    currentSnippetId = id;
+                    setHashId(id);
+                }
+            } catch (_e) {
+            }
+        }
+
+        async function loadFromHash() {
+            const id = getHashId();
+            if (!id) return false;
+            if (id === currentSnippetId) return true;
+
+            isLoadingFromHash = true;
+            try {
+                const response = await fetch(`/api/snippet/${id}`);
+                if (!response.ok) return false;
+                const data = await response.json();
+                const code = data && typeof data.code === 'string' ? data.code : '';
+                const mode = data && typeof data.mode === 'string' ? data.mode : null;
+
+                codeInput.value = code;
+                currentSnippetId = id;
+
+                if (mode === 'markdown') setMode('markdown');
+                else setMode('code');
+
+                return true;
+            } catch (_e) {
+                return false;
+            } finally {
+                isLoadingFromHash = false;
+            }
         }
 
         async function analyzeCode() {
@@ -1467,9 +1532,12 @@ if __name__ == "__main__":
         }
 
         // Initial state
-        setMode('code');
-        updateStats();
-        updateLineNumbers();
+        (async () => {
+            const loaded = await loadFromHash();
+            if (!loaded) setMode('code');
+            updateStats();
+            updateLineNumbers();
+        })();
     </script>
 </body>
 </html>

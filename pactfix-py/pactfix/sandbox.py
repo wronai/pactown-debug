@@ -206,7 +206,7 @@ def detect_project_language(project_path: Path) -> Tuple[str, Dict]:
     file_counts = {}
     
     for item in project_path.rglob('*'):
-        if item.is_file() and not any(p.startswith('.') for p in item.parts):
+        if item.is_file() and '_fixtures' not in item.parts and not any(p.startswith('.') for p in item.parts):
             ext = item.suffix.lower()
             name = item.name.lower()
             
@@ -263,7 +263,7 @@ class Sandbox:
             shutil.rmtree(self.project_copy_dir, ignore_errors=True)
 
         ignore = shutil.ignore_patterns(
-            '.git', '.pactfix', 'node_modules', '__pycache__', '*.pyc',
+            '.git', '.pactfix', '_fixtures', 'node_modules', '__pycache__', '*.pyc',
             'venv', '.venv', 'dist', 'build', 'target', '.idea', '.vscode'
         )
         shutil.copytree(self.project_path, self.project_copy_dir, ignore=ignore)
