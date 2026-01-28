@@ -34,6 +34,7 @@ test-backend:
 	python -m unittest discover -s tests -q
 
 test-pactfix:
+	cd $(PACTFIX_DIR) && python -c "import pytest" >/dev/null 2>&1 || python -m pip install -q -e ".[dev]"
 	cd $(PACTFIX_DIR) && python -m pytest -q
 
 test-sandbox:

@@ -73,6 +73,8 @@ def detect_language(code: str, filename: str = None) -> str:
             return 'github-actions'
         if any(x in fn_lower for x in ['playbook', 'ansible']):
             return 'ansible'
+        if fn_lower.endswith(('.yml', '.yaml')):
+            return 'yaml'
         if fn_lower.endswith('.py'):
             return 'python'
         if fn_lower.endswith('.php'):
@@ -157,8 +159,13 @@ def detect_language(code: str, filename: str = None) -> str:
     if 'def ' in code and 'end' in code and ('class ' in code or 'module ' in code):
         return 'ruby'
     
+    yaml_key_lines = sum(1 for l in lines if re.match(r'^\s*[A-Za-z0-9_.-]+\s*:\s*\S?', l))
+    has_makefile_recipe = re.search(r'^\t(?!\s*[A-Za-z0-9_.-]+\s*:)\S', code, re.MULTILINE) is not None
+    if yaml_key_lines >= 3 and not has_makefile_recipe and not re.search(r'^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*[:+?]?=\s*', code, re.MULTILINE):
+        return 'yaml'
+    
     # Makefile detection
-    if re.search(r'^\w+:\s*$', code, re.MULTILINE) or '.PHONY:' in code:
+    if (re.search(r'^[A-Za-z0-9_.-]+:\s*$', code, re.MULTILINE) or '.PHONY:' in code) and (has_makefile_recipe or '.PHONY:' in code):
         return 'makefile'
     
     # HTML detection
@@ -235,7 +242,12 @@ def add_fix_comments(result: AnalysisResult) -> str:
         'html': '<!--',
         'css': '/*',
     }
+    comment_suffix_by_language = {
+        'html': ' -->',
+        'css': ' */',
+    }
     prefix = comment_prefix_by_language.get(result.language, '#')
+    suffix = comment_suffix_by_language.get(result.language, '')
 
     lines = result.fixed_code.split('\n')
     fixes_by_line: Dict[int, List[Fix]] = {}
@@ -261,7 +273,7 @@ def add_fix_comments(result: AnalysisResult) -> str:
         if len(msg) > 220:
             msg = msg[:217] + '...'
 
-        comment_line = f"{indent}{prefix} pactfix: {msg}"
+        comment_line = f"{indent}{prefix} pactfix: {msg}{suffix}"
         lines.insert(idx, comment_line)
 
     return '\n'.join(lines)

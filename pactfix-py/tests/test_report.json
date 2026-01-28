@@ -4,8 +4,8 @@
     "passed_tests": 24,
     "failed_tests": 0,
     "total_errors": 91,
-    "total_warnings": 343,
-    "total_fixes": 67,
+    "total_warnings": 346,
+    "total_fixes": 75,
     "languages_tested": [
       "typescript",
       "go",
@@ -32,8 +32,8 @@
       "github-actions",
       "ansible"
     ],
-    "timestamp": "2026-01-28T18:36:55.031877",
-    "duration_seconds": 0.026563
+    "timestamp": "2026-01-28T21:09:11.618761",
+    "duration_seconds": 0.022937
   },
   "results": [
     {
@@ -188,7 +188,6 @@
       "expected_min_issues": 5,
       "passed": true,
       "details": [
-        "Language detection: expected 'yaml', got 'makefile'",
         "ERROR [YAML002] L5: YAML nie powinien zawierać tabulatorów",
         "ERROR [YAML008] L30: Hardcoded password - użyj zmiennej środowiskowej",
         "ERROR [YAML008] L31: Hardcoded api_key - użyj zmiennej środowiskowej",
@@ -310,8 +309,8 @@
       "language": "python",
       "file_path": "/home/tom/github/wronai/pactown-debug/pactfix-py/tests/fixtures/python/errors.py",
       "errors_found": 3,
-      "warnings_found": 7,
-      "fixes_applied": 3,
+      "warnings_found": 10,
+      "fixes_applied": 11,
       "expected_min_issues": 5,
       "passed": true,
       "details": [
@@ -322,10 +321,12 @@
         "WARN [PY002] L17: Unikaj pustego except: - złap konkretne wyjątki",
         "WARN [PY003] L21: Mutable default argument - użyj None",
         "WARN [PY003] L25: Mutable default argument - użyj None",
-        "WARN [PY004] L29: Użyj \"is None\" zamiast \"== None\"",
+        "WARN [PY004] L31: Użyj \"is None\" zamiast \"== None\"",
         "FIX L5: Dodano nawiasy do print()",
         "FIX L6: Dodano nawiasy do print()",
-        "FIX L7: Dodano nawiasy do print()"
+        "FIX L7: Dodano nawiasy do print()",
+        "FIX L12: Zmieniono except: na except Exception:",
+        "FIX L17: Zmieniono except: na except Exception:"
       ]
     },
     {
@@ -467,6 +468,7 @@
       "expected_min_issues": 5,
       "passed": true,
       "details": [
+        "Language detection: expected 'kubernetes', got 'yaml'",
         "ERROR [K8S006] L29: Hardcoded secret - użyj Secret",
         "ERROR [K8S001] L36: Kontener privileged",
         "ERROR [K8S001] L60: Kontener privileged",
