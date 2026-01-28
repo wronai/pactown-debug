@@ -4,7 +4,7 @@ SHELL := /bin/bash
 -include .env
 export
 
-.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish build-pactfix bump-patch clean build run stop build run stop clean down
+.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish build-pactfix bump-patch clean build run stop down
 
 PACTFIX_DIR ?= pactfix-py
 PORT ?= 8081
@@ -21,11 +21,7 @@ help:
 	@echo "  make build          - build Docker image for pactown-debug"
 	@echo "  make run            - run Docker container (builds if needed)"
 	@echo "  make stop           - stop and remove running container"
-	@echo "  make clean          - remove python build/test artifacts"
-	@echo "  make build   - build Docker image for pactown-debug"
-	@echo "  make run     - run Docker container (builds if needed)"
-	@echo "  make stop    - stop and remove running container"
-	@echo "  make clean   - remove Docker image and containers"
+	@echo "  make clean          - remove python build/test artifacts and Docker containers"
 	@echo "  make down           - stop and remove containers (alias for clean)"
 
 test: test-backend test-pactfix test-frontend

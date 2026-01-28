@@ -28,6 +28,22 @@ cleanup_sandbox() {
     rm -rf "${project_path}/.pactfix" 2>/dev/null || true
 }
 
+restore_fixture() {
+    local project_path="$1"
+    local fixture_dir="${project_path}/_fixtures/faulty"
+
+    if [[ ! -d "$fixture_dir" ]]; then
+        echo -e "${RED}❌ Missing fixture directory: ${fixture_dir}${NC}"
+        return 1
+    fi
+
+    # Remove everything except _fixtures
+    find "$project_path" -mindepth 1 -maxdepth 1 ! -name "_fixtures" -exec rm -rf {} +
+
+    # Restore fixture contents
+    cp -a "${fixture_dir}/." "$project_path/"
+}
+
 test_project() {
     local project_name="$1"
     local project_path="${TEST_PROJECTS_DIR}/${project_name}"
@@ -45,6 +61,9 @@ test_project() {
     
     # Cleanup previous sandbox
     cleanup_sandbox "$project_path"
+
+    # Restore faulty fixture to make tests deterministic
+    restore_fixture "$project_path"
     
     # Run pactfix with sandbox
     # Note: pactfix returns 1 if errors are detected, which is expected
@@ -84,6 +103,32 @@ test_project() {
             fixes=$(python3 -c "import json; r=json.load(open('${project_path}/.pactfix/report.json')); print(r.get('total_fixes', 0))" 2>/dev/null || echo "0")
             errors=$(python3 -c "import json; r=json.load(open('${project_path}/.pactfix/report.json')); print(r.get('total_errors', 0))" 2>/dev/null || echo "0")
             echo -e "   📊 Errors detected: ${errors}, Fixes applied: ${fixes}"
+        else
+            fixes=0
+        fi
+
+        # If fixes were reported, ensure fixed files are actually different than the restored originals
+        if [[ "${fixes}" -gt 0 ]]; then
+            if [[ ! -d "${project_path}/.pactfix/fixed" ]]; then
+                echo -e "   ${RED}✗${NC} Fixed files directory missing"
+                all_present=false
+            else
+                while IFS= read -r fixed_file; do
+                    rel_path="${fixed_file#${project_path}/.pactfix/fixed/}"
+                    orig_file="${project_path}/${rel_path}"
+
+                    if [[ ! -f "$orig_file" ]]; then
+                        echo -e "   ${RED}✗${NC} Original file missing for fixed file: ${rel_path}"
+                        all_present=false
+                        continue
+                    fi
+
+                    if cmp -s "$fixed_file" "$orig_file"; then
+                        echo -e "   ${RED}✗${NC} Fixed file identical to original: ${rel_path}"
+                        all_present=false
+                    fi
+                done < <(find "${project_path}/.pactfix/fixed" -type f)
+            fi
         fi
 
         # Validate sandbox execution status
