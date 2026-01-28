@@ -1,17 +1,22 @@
-# Pactown Live Debug - Docker Compose
+# Pactfix Live Debug - Docker Compose
 # Run: docker-compose up --build
 
 version: '3.8'
 
 services:
-  pactown-debug:
+  # Main frontend + backend service
+  pactfix-web:
     build: .
-    container_name: pactown-live-debug
+    container_name: pactfix-live-debug
     ports:
       - "8080:8080"
     environment:
       - PORT=8080
       - PYTHONUNBUFFERED=1
+      - PACTFIX_API_URL=http://pactfix-api:5000
+    depends_on:
+      pactfix-api:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
@@ -19,12 +24,28 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    # Optional: mount local app directory for development
-    # volumes:
-    #   - ./app:/app:ro
     networks:
-      - pactown-network
+      - pactfix-network
+
+  # Pactfix API service (separate analyzer)
+  pactfix-api:
+    build: ./packages/pactfix-py
+    container_name: pactfix-api
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - pactfix-network
 
 networks:
-  pactown-network:
+  pactfix-network:
     driver: bridge

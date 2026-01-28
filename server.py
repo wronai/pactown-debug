@@ -8,9 +8,13 @@ import json
 import subprocess
 import re
 import os
+import urllib.request
+import urllib.error
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 import logging
+
+PACTFIX_API_URL = os.environ.get('PACTFIX_API_URL', '')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -1459,14 +1463,26 @@ class DebugHandler(SimpleHTTPRequestHandler):
                 ['which', 'shellcheck'], capture_output=True
             ).returncode == 0
             
+            # Check pactfix API availability
+            pactfix_available = False
+            if PACTFIX_API_URL:
+                try:
+                    req = urllib.request.Request(f"{PACTFIX_API_URL}/api/health")
+                    with urllib.request.urlopen(req, timeout=2) as resp:
+                        pactfix_available = resp.status == 200
+                except:
+                    pass
+            
             health = {
                 'status': 'healthy',
-                'version': '1.1.0',
+                'version': '1.2.0',
                 'features': {
                     'shellcheck': shellcheck_available,
                     'bash_analysis': True,
                     'python_analysis': True,
-                    'auto_fix': True
+                    'auto_fix': True,
+                    'pactfix_api': pactfix_available,
+                    'pactfix_url': PACTFIX_API_URL or None
                 }
             }
             self.wfile.write(json.dumps(health).encode())
@@ -1482,9 +1498,18 @@ class DebugHandler(SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body)
                 code = data.get('code', '')
+                filename = data.get('filename')
                 
                 logger.info(f"Analyzing code ({len(code)} chars)")
-                result = analyze_code_multi(code)
+                
+                # Try pactfix API service first if configured
+                result = None
+                if PACTFIX_API_URL:
+                    result = self._call_pactfix_api(data)
+                
+                # Fallback to local analysis
+                if result is None:
+                    result = analyze_code_multi(code, filename=filename)
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
@@ -1499,6 +1524,25 @@ class DebugHandler(SimpleHTTPRequestHandler):
                 self.send_error(500, str(e))
         else:
             self.send_error(404, 'Not Found')
+    
+    def _call_pactfix_api(self, data: dict) -> dict:
+        """Call the pactfix API service."""
+        try:
+            req = urllib.request.Request(
+                f"{PACTFIX_API_URL}/api/analyze",
+                data=json.dumps(data).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                logger.info(f"Pactfix API response: {result.get('language', 'unknown')}")
+                return result
+        except (urllib.error.URLError, urllib.error.HTTPError) as e:
+            logger.warning(f"Pactfix API error, falling back to local: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Pactfix API exception: {e}")
+            return None
     
     def do_OPTIONS(self):
         """Handle CORS preflight requests."""
