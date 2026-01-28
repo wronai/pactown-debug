@@ -1,0 +1,17 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/bash/log.json",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/bash/fixed/fixed_log.json",
+  "language": "bash",
+  "errors": 0,
+  "warnings": 0,
+  "fixes": 0,
+  "details": {
+    "language": "bash",
+    "originalCode": "{\n  \"timestamp\": \"2026-01-28T15:48:10.095410\",\n  \"input_file\": \"examples/bash/faulty.sh\",\n  \"output_file\": \"examples/bash/fixed.sh\",\n  \"language\": \"bash\",\n  \"errors_count\": 1,\n  \"warnings_count\": 2,\n  \"fixes_count\": 1,\n  \"errors\": [\n    {\n      \"line\": 8,\n      \"code\": \"SC1073\",\n      \"message\": \"Cudzysłów zamykający jest w złym miejscu\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 13,\n      \"code\": \"SC2164\",\n      \"message\": \"Użyj cd ... || exit\"\n    },\n    {\n      \"line\": 14,\n      \"code\": \"SC2162\",\n      \"message\": \"Użyj read -r\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 8,\n      \"message\": \"Poprawiono pozycję cudzysłowu\",\n      \"before\": \"echo \\\"$(ssh student@${HOST} hostname -f\\\") >> ${OUTPUT}${HOST}\",\n      \"after\": \"echo \\\"$(ssh student@${HOST} hostname -f)\\\" >> ${OUTPUT}${HOST}\"\n    }\n  ]\n}",
+    "fixedCode": "{\n  \"timestamp\": \"2026-01-28T15:48:10.095410\",\n  \"input_file\": \"examples/bash/faulty.sh\",\n  \"output_file\": \"examples/bash/fixed.sh\",\n  \"language\": \"bash\",\n  \"errors_count\": 1,\n  \"warnings_count\": 2,\n  \"fixes_count\": 1,\n  \"errors\": [\n    {\n      \"line\": 8,\n      \"code\": \"SC1073\",\n      \"message\": \"Cudzysłów zamykający jest w złym miejscu\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 13,\n      \"code\": \"SC2164\",\n      \"message\": \"Użyj cd ... || exit\"\n    },\n    {\n      \"line\": 14,\n      \"code\": \"SC2162\",\n      \"message\": \"Użyj read -r\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 8,\n      \"message\": \"Poprawiono pozycję cudzysłowu\",\n      \"before\": \"echo \\\"$(ssh student@${HOST} hostname -f\\\") >> ${OUTPUT}${HOST}\",\n      \"after\": \"echo \\\"$(ssh student@${HOST} hostname -f)\\\" >> ${OUTPUT}${HOST}\"\n    }\n  ]\n}",
+    "errors": [],
+    "warnings": [],
+    "fixes": [],
+    "context": {}
+  }
+}

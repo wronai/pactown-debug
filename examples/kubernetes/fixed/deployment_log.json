@@ -1,0 +1,78 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/kubernetes/deployment.yaml",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/kubernetes/fixed/fixed_deployment.yaml",
+  "language": "kubernetes",
+  "errors": 2,
+  "warnings": 6,
+  "fixes": 0,
+  "details": {
+    "language": "kubernetes",
+    "originalCode": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web-app\n  namespace: default\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: app\n        image: myapp:latest\n        ports:\n        - containerPort: 8080\n        env:\n        - name: DATABASE_PASSWORD\n          value: \"secret123\"\n        - name: API_KEY\n          value: \"abcdefghijk\"\n        securityContext:\n          privileged: true\n          runAsUser: 0\n        volumeMounts:\n        - name: host-data\n          mountPath: /data\n      volumes:\n      - name: host-data\n        hostPath:\n          path: /var/data\n",
+    "fixedCode": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web-app\n  namespace: default\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: app\n        image: myapp:latest\n        ports:\n        - containerPort: 8080\n        env:\n        - name: DATABASE_PASSWORD\n          value: \"secret123\"\n        - name: API_KEY\n          value: \"abcdefghijk\"\n        securityContext:\n          privileged: true\n          runAsUser: 0\n        volumeMounts:\n        - name: host-data\n          mountPath: /data\n      volumes:\n      - name: host-data\n        hostPath:\n          path: /var/data\n",
+    "errors": [
+      {
+        "line": 23,
+        "column": 1,
+        "code": "K8S006",
+        "message": "Hardcoded secret - użyj Secret",
+        "severity": "warning"
+      },
+      {
+        "line": 27,
+        "column": 1,
+        "code": "K8S001",
+        "message": "Kontener privileged",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 5,
+        "column": 1,
+        "code": "K8S007",
+        "message": "Użycie default namespace",
+        "severity": "warning"
+      },
+      {
+        "line": 18,
+        "column": 1,
+        "code": "K8S004",
+        "message": "Użyj konkretnego tagu",
+        "severity": "warning"
+      },
+      {
+        "line": 28,
+        "column": 1,
+        "code": "K8S002",
+        "message": "Kontener jako root",
+        "severity": "warning"
+      },
+      {
+        "line": 34,
+        "column": 1,
+        "code": "K8S003",
+        "message": "hostPath - użyj PersistentVolume",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "K8S008",
+        "message": "Brak resource limits dla Deployment",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "K8S009",
+        "message": "Brak probes dla Deployment",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {
+      "kind": "Deployment",
+      "namespace": "default"
+    }
+  }
+}

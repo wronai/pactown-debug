@@ -1,0 +1,177 @@
+{
+  "timestamp": "2026-01-28T16:04:04.571640",
+  "total_files": 24,
+  "total_errors": 40,
+  "total_warnings": 140,
+  "total_fixes": 56,
+  "files": [
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/ansible/playbook.yml",
+      "language": "ansible",
+      "errors": 1,
+      "warnings": 4,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/bash/log.json",
+      "language": "bash",
+      "errors": 0,
+      "warnings": 0,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/bash/faulty.sh",
+      "language": "bash",
+      "errors": 0,
+      "warnings": 3,
+      "fixes": 1
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/bash/fixed.sh",
+      "language": "bash",
+      "errors": 0,
+      "warnings": 3,
+      "fixes": 1
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/docker-compose/docker-compose.yml",
+      "language": "docker-compose",
+      "errors": 5,
+      "warnings": 5,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/dockerfile/Dockerfile",
+      "language": "dockerfile",
+      "errors": 2,
+      "warnings": 8,
+      "fixes": 3
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/github-actions/workflow.yml",
+      "language": "github-actions",
+      "errors": 2,
+      "warnings": 5,
+      "fixes": 2
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/javascript/fixed.js",
+      "language": "javascript",
+      "errors": 1,
+      "warnings": 10,
+      "fixes": 5
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/javascript/faulty.js",
+      "language": "javascript",
+      "errors": 1,
+      "warnings": 10,
+      "fixes": 5
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/javascript/log.json",
+      "language": "javascript",
+      "errors": 3,
+      "warnings": 14,
+      "fixes": 10
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/kubernetes/deployment.yaml",
+      "language": "kubernetes",
+      "errors": 2,
+      "warnings": 6,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/nginx/nginx.conf",
+      "language": "nginx",
+      "errors": 1,
+      "warnings": 3,
+      "fixes": 1
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/nodejs/fixed.js",
+      "language": "nodejs",
+      "errors": 1,
+      "warnings": 14,
+      "fixes": 6
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/nodejs/faulty.js",
+      "language": "nodejs",
+      "errors": 1,
+      "warnings": 14,
+      "fixes": 6
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/nodejs/log.json",
+      "language": "nodejs",
+      "errors": 3,
+      "warnings": 21,
+      "fixes": 12
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/php/faulty.php",
+      "language": "php",
+      "errors": 3,
+      "warnings": 3,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/php/fixed.php",
+      "language": "php",
+      "errors": 3,
+      "warnings": 3,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/php/log.json",
+      "language": "php",
+      "errors": 1,
+      "warnings": 0,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/python/log.json",
+      "language": "bash",
+      "errors": 0,
+      "warnings": 0,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/python/fixed.py",
+      "language": "python",
+      "errors": 0,
+      "warnings": 4,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/python/faulty.py",
+      "language": "python",
+      "errors": 3,
+      "warnings": 4,
+      "fixes": 3
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/python/log_js.json",
+      "language": "bash",
+      "errors": 0,
+      "warnings": 0,
+      "fixes": 0
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/sql/faulty.sql",
+      "language": "sql",
+      "errors": 2,
+      "warnings": 5,
+      "fixes": 1
+    },
+    {
+      "file": "/home/tom/github/wronai/pactown-debug/examples/terraform/main.tf",
+      "language": "terraform",
+      "errors": 5,
+      "warnings": 1,
+      "fixes": 0
+    }
+  ]
+}

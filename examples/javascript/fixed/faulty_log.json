@@ -1,0 +1,127 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/javascript/faulty.js",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/javascript/fixed/fixed_faulty.js",
+  "language": "javascript",
+  "errors": 1,
+  "warnings": 10,
+  "fixes": 5,
+  "details": {
+    "language": "javascript",
+    "originalCode": "// Faulty JavaScript code with common issues\n\nvar userName = \"John\";\nvar userAge = 25;\n\nfunction processUser() {\n    console.log(\"Processing user: \" + userName);\n    \n    if (userAge == \"25\") {\n        console.log(\"User is 25\");\n    }\n    \n    var result = eval(\"2 + 2\");\n    \n    document.getElementById(\"output\").innerHTML = userName;\n    \n    var items = [1, 2, 3];\n    items.forEach(function() {\n        console.log(\"Item\");\n    });\n}\n\nfunction callback() {\n    setTimeout(function() {\n        fetch('/api').then(function() {\n            process(function() {\n                            handle(function() {\n                                complete();\n                            });\n            });\n        });\n    }, 1000);\n}\n\nvar x = null;\nif (x == undefined) {\n    console.debug(\"x is undefined\");\n}\n",
+    "fixedCode": "// Faulty JavaScript code with common issues\n\nlet userName = \"John\";\nlet userAge = 25;\n\nfunction processUser() {\n    console.log(\"Processing user: \" + userName);\n    \n    if (userAge == \"25\") {\n        console.log(\"User is 25\");\n    }\n    \n    let result = eval(\"2 + 2\");\n    \n    document.getElementById(\"output\").innerHTML = userName;\n    \n    let items = [1, 2, 3];\n    items.forEach(function() {\n        console.log(\"Item\");\n    });\n}\n\nfunction callback() {\n    setTimeout(function() {\n        fetch('/api').then(function() {\n            process(function() {\n                            handle(function() {\n                                complete();\n                            });\n            });\n        });\n    }, 1000);\n}\n\nlet x = null;\nif (x == undefined) {\n    console.debug(\"x is undefined\");\n}\n",
+    "errors": [
+      {
+        "line": 13,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 3,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 4,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 7,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 9,
+        "column": 1,
+        "code": "JS002",
+        "message": "Użyj === zamiast ==",
+        "severity": "warning"
+      },
+      {
+        "line": 10,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 13,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 17,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 19,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 35,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 36,
+        "column": 1,
+        "code": "JS002",
+        "message": "Użyj === zamiast ==",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 3,
+        "description": "Zamieniono var na let",
+        "before": "var userName = \"John\";",
+        "after": "let userName = \"John\";"
+      },
+      {
+        "line": 4,
+        "description": "Zamieniono var na let",
+        "before": "var userAge = 25;",
+        "after": "let userAge = 25;"
+      },
+      {
+        "line": 13,
+        "description": "Zamieniono var na let",
+        "before": "var result = eval(\"2 + 2\");",
+        "after": "let result = eval(\"2 + 2\");"
+      },
+      {
+        "line": 17,
+        "description": "Zamieniono var na let",
+        "before": "var items = [1, 2, 3];",
+        "after": "let items = [1, 2, 3];"
+      },
+      {
+        "line": 35,
+        "description": "Zamieniono var na let",
+        "before": "var x = null;",
+        "after": "let x = null;"
+      }
+    ],
+    "context": {}
+  }
+}

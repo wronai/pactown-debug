@@ -1,0 +1,46 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/bash/fixed.sh",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/bash/fixed/fixed_fixed.sh",
+  "language": "bash",
+  "errors": 0,
+  "warnings": 3,
+  "fixes": 1,
+  "details": {
+    "language": "bash",
+    "originalCode": "#!/usr/bin/bash\nOUTPUT=/home/student/output-\n\nfor HOST in server{a,b}; do\n    if test -f ${OUTPUT}${HOST}; then\n        rm -v ${OUTPUT}${HOST}\n    fi\n    echo \"$(ssh student@${HOST} hostname -f)\" >> ${OUTPUT}${HOST}  # ✅ NAPRAWIONO: Poprawiono pozycję cudzysłowu\n    echo \"#####\"\n    ssh student@${HOST} lscpu | grep \"^CPU\" >> ${OUTPUT}${HOST}\ndone\n\ncd /some/directory\nread NAME\necho \"Hello $NAME\"\n",
+    "fixedCode": "#!/usr/bin/bash\nOUTPUT=/home/student/output-\n\nfor HOST in server{a,b}; do\n    if test -f ${OUTPUT}${HOST}; then\n        rm -v ${OUTPUT}${HOST}\n    fi\n    echo \"$(ssh student@${HOST} hostname -f)\" >> ${OUTPUT}${HOST}  # ✅ NAPRAWIONO: Poprawiono pozycję cudzysłowu\n    echo \"#####\"\n    ssh student@${HOST} lscpu | grep \"^CPU\" >> ${OUTPUT}${HOST}\ndone\n\ncd /some/directory || exit 1\nread NAME\necho \"Hello $NAME\"\n",
+    "errors": [],
+    "warnings": [
+      {
+        "line": 13,
+        "column": 1,
+        "code": "SC2164",
+        "message": "cd bez obsługi błędów - użyj cd ... || exit",
+        "severity": "warning"
+      },
+      {
+        "line": 14,
+        "column": 1,
+        "code": "SC2162",
+        "message": "read bez -r może interpretować backslashe",
+        "severity": "warning"
+      },
+      {
+        "line": 15,
+        "column": 1,
+        "code": "SC2086",
+        "message": "Zmienne powinny być w cudzysłowach",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 13,
+        "description": "Dodano obsługę błędów dla cd",
+        "before": "cd /some/directory",
+        "after": "cd /some/directory || exit 1"
+      }
+    ],
+    "context": {}
+  }
+}

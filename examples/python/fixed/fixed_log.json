@@ -1,0 +1,46 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/python/fixed.py",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/python/fixed/fixed_fixed.py",
+  "language": "python",
+  "errors": 0,
+  "warnings": 4,
+  "fixes": 0,
+  "details": {
+    "language": "python",
+    "originalCode": "#!/usr/bin/env python3\nimport os\nimport sys\nimport json\n\ndef process_data(items=[]):\n    for item in items:\n        if item == None:\n            print(\"Item is None\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n            continue\n        try:\n            result = item * 2\n        except:\n            print(\"Error processing item\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n    return items\n\ndef calculate_average(numbers):\n    total = sum(numbers)\n    return total / len(numbers)\n\nif __name__ == \"__main__\":\n    data = [1, 2, None, 4]\n    process_data(data)\n    \n    if len(sys.argv) == None:\n        print(\"No arguments\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n",
+    "fixedCode": "#!/usr/bin/env python3\nimport os\nimport sys\nimport json\n\ndef process_data(items=[]):\n    for item in items:\n        if item == None:\n            print(\"Item is None\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n            continue\n        try:\n            result = item * 2\n        except:\n            print(\"Error processing item\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n    return items\n\ndef calculate_average(numbers):\n    total = sum(numbers)\n    return total / len(numbers)\n\nif __name__ == \"__main__\":\n    data = [1, 2, None, 4]\n    process_data(data)\n    \n    if len(sys.argv) == None:\n        print(\"No arguments\")  # ✅ NAPRAWIONO: Dodano nawiasy do print()\n",
+    "errors": [],
+    "warnings": [
+      {
+        "line": 6,
+        "column": 1,
+        "code": "PY003",
+        "message": "Mutable default argument - użyj None",
+        "severity": "warning"
+      },
+      {
+        "line": 8,
+        "column": 1,
+        "code": "PY004",
+        "message": "Użyj \"is None\" zamiast \"== None\"",
+        "severity": "warning"
+      },
+      {
+        "line": 13,
+        "column": 1,
+        "code": "PY002",
+        "message": "Unikaj pustego except: - złap konkretne wyjątki",
+        "severity": "warning"
+      },
+      {
+        "line": 25,
+        "column": 1,
+        "code": "PY004",
+        "message": "Użyj \"is None\" zamiast \"== None\"",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {}
+  }
+}

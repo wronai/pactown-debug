@@ -1,0 +1,114 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/dockerfile/Dockerfile",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/dockerfile/fixed/fixed_Dockerfile",
+  "language": "dockerfile",
+  "errors": 2,
+  "warnings": 8,
+  "fixes": 3,
+  "details": {
+    "language": "dockerfile",
+    "originalCode": "FROM ubuntu\nRUN apt-get install -y python3\nADD app.py /app/\nWORKDIR app\nENV DATABASE_PASSWORD=secret123\nENV API_TOKEN=abc123xyz\nCOPY config.yml /app/\nCMD python3 app.py\nEXPOSE 8080\n",
+    "fixedCode": "FROM ubuntu\nRUN apt-get install -y python3\nCOPY app.py /app/\nWORKDIR /app\nENV DATABASE_PASSWORD=secret123\nENV API_TOKEN=abc123xyz\nCOPY config.yml /app/\nCMD python3 app.py\nEXPOSE 8080\n",
+    "errors": [
+      {
+        "line": 5,
+        "column": 1,
+        "code": "DOCKER007",
+        "message": "Hardcoded secret - użyj build args lub secrets",
+        "severity": "warning"
+      },
+      {
+        "line": 6,
+        "column": 1,
+        "code": "DOCKER007",
+        "message": "Hardcoded secret - użyj build args lub secrets",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 1,
+        "column": 1,
+        "code": "DOCKER001",
+        "message": "Użyj konkretnego tagu zamiast :latest dla ubuntu",
+        "severity": "warning"
+      },
+      {
+        "line": 2,
+        "column": 1,
+        "code": "DOCKER002",
+        "message": "apt-get install bez czyszczenia cache",
+        "severity": "warning"
+      },
+      {
+        "line": 2,
+        "column": 1,
+        "code": "DOCKER003",
+        "message": "apt-get install bez update w tej samej warstwie",
+        "severity": "warning"
+      },
+      {
+        "line": 3,
+        "column": 1,
+        "code": "DOCKER004",
+        "message": "Użyj COPY zamiast ADD dla lokalnych plików",
+        "severity": "warning"
+      },
+      {
+        "line": 4,
+        "column": 1,
+        "code": "DOCKER008",
+        "message": "WORKDIR powinien używać ścieżki absolutnej",
+        "severity": "warning"
+      },
+      {
+        "line": 8,
+        "column": 1,
+        "code": "DOCKER006",
+        "message": "Użyj formy exec (JSON array) dla CMD/ENTRYPOINT",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "DOCKER009",
+        "message": "Brak USER - kontener będzie działał jako root",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "DOCKER010",
+        "message": "Brak HEALTHCHECK",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 1,
+        "description": "Dodano placeholder dla wersji",
+        "before": "FROM ubuntu",
+        "after": "FROM ubuntu:latest  # TODO: specify version"
+      },
+      {
+        "line": 3,
+        "description": "Zamieniono ADD na COPY",
+        "before": "ADD app.py /app/",
+        "after": "COPY app.py /app/"
+      },
+      {
+        "line": 4,
+        "description": "Dodano / do WORKDIR",
+        "before": "WORKDIR app",
+        "after": "WORKDIR /app"
+      }
+    ],
+    "context": {
+      "base_image": "ubuntu",
+      "env_vars": [
+        "DATABASE_PASSWORD",
+        "API_TOKEN"
+      ]
+    }
+  }
+}

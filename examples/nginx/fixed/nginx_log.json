@@ -1,0 +1,54 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/nginx/nginx.conf",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/nginx/fixed/fixed_nginx.conf",
+  "language": "nginx",
+  "errors": 1,
+  "warnings": 3,
+  "fixes": 1,
+  "details": {
+    "language": "nginx",
+    "originalCode": "server {\n    listen 80;\n    server_name example.com;\n    server_tokens on;\n    autoindex on;\n    \n    location / {\n        root /var/www/html;\n        index index.html;\n    }\n    \n    location /api {\n        proxy_pass http://backend:3000;\n        root /var/www/api;\n    }\n}\n\nserver {\n    listen 443 ssl;\n    server_name secure.example.com;\n    \n    ssl_certificate /etc/ssl/cert.pem;\n    ssl_certificate_key /etc/ssl/key.pem;\n    ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;\n    \n    location / {\n        proxy_pass http://app:8080;\n    }\n}\n",
+    "fixedCode": "server {\n    listen 80;\n    server_name example.com;\n    server_tokens off;\n    autoindex on;\n    \n    location / {\n        root /var/www/html;\n        index index.html;\n    }\n    \n    location /api {\n        proxy_pass http://backend:3000;\n        root /var/www/api;\n    }\n}\n\nserver {\n    listen 443 ssl;\n    server_name secure.example.com;\n    \n    ssl_certificate /etc/ssl/cert.pem;\n    ssl_certificate_key /etc/ssl/key.pem;\n    ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;\n    \n    location / {\n        proxy_pass http://app:8080;\n    }\n}\n",
+    "errors": [
+      {
+        "line": 24,
+        "column": 1,
+        "code": "NGINX003",
+        "message": "Słabe protokoły SSL",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 4,
+        "column": 1,
+        "code": "NGINX001",
+        "message": "server_tokens ujawnia wersję",
+        "severity": "warning"
+      },
+      {
+        "line": 5,
+        "column": 1,
+        "code": "NGINX002",
+        "message": "autoindex ujawnia strukturę",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "NGINX005",
+        "message": "Brak security headers",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 4,
+        "description": "Wyłączono server_tokens",
+        "before": "server_tokens on;",
+        "after": "server_tokens off;"
+      }
+    ],
+    "context": {}
+  }
+}

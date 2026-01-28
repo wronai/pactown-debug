@@ -1,0 +1,199 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/javascript/log.json",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/javascript/fixed/fixed_log.json",
+  "language": "javascript",
+  "errors": 3,
+  "warnings": 14,
+  "fixes": 10,
+  "details": {
+    "language": "javascript",
+    "originalCode": "{\n  \"timestamp\": \"2026-01-28T15:48:23.265351\",\n  \"input_file\": \"examples/javascript/faulty.js\",\n  \"output_file\": \"examples/javascript/fixed.js\",\n  \"language\": \"javascript\",\n  \"errors_count\": 1,\n  \"warnings_count\": 11,\n  \"fixes_count\": 5,\n  \"errors\": [\n    {\n      \"line\": 13,\n      \"code\": \"JS004\",\n      \"message\": \"eval() jest niebezpieczne\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 3,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 4,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 7,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 9,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 10,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 13,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 17,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 19,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 35,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 36,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 37,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 3,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var userName = \\\"John\\\";\",\n      \"after\": \"let userName = \\\"John\\\";\"\n    },\n    {\n      \"line\": 4,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var userAge = 25;\",\n      \"after\": \"let userAge = 25;\"\n    },\n    {\n      \"line\": 13,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var result = eval(\\\"2 + 2\\\");\",\n      \"after\": \"let result = eval(\\\"2 + 2\\\");\"\n    },\n    {\n      \"line\": 17,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var items = [1, 2, 3];\",\n      \"after\": \"let items = [1, 2, 3];\"\n    },\n    {\n      \"line\": 35,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var x = null;\",\n      \"after\": \"let x = null;\"\n    }\n  ]\n}",
+    "fixedCode": "{\n  \"timestamp\": \"2026-01-28T15:48:23.265351\",\n  \"input_file\": \"examples/javascript/faulty.js\",\n  \"output_file\": \"examples/javascript/fixed.js\",\n  \"language\": \"javascript\",\n  \"errors_count\": 1,\n  \"warnings_count\": 11,\n  \"fixes_count\": 5,\n  \"errors\": [\n    {\n      \"line\": 13,\n      \"code\": \"JS004\",\n      \"message\": \"eval() jest niebezpieczne\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 3,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 4,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 7,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 9,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 10,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 13,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 17,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 19,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 35,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 36,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 37,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 3,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let userName = \\\"John\\\";\",\n      \"after\": \"let userName = \\\"John\\\";\"\n    },\n    {\n      \"line\": 4,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let userAge = 25;\",\n      \"after\": \"let userAge = 25;\"\n    },\n    {\n      \"line\": 13,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let result = eval(\\\"2 + 2\\\");\",\n      \"after\": \"let result = eval(\\\"2 + 2\\\");\"\n    },\n    {\n      \"line\": 17,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let items = [1, 2, 3];\",\n      \"after\": \"let items = [1, 2, 3];\"\n    },\n    {\n      \"line\": 35,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let x = null;\",\n      \"after\": \"let x = null;\"\n    }\n  ]\n}",
+    "errors": [
+      {
+        "line": 13,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      },
+      {
+        "line": 89,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      },
+      {
+        "line": 90,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 30,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 40,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 55,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 70,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 76,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 77,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 82,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 83,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 88,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 89,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 94,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 95,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 100,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 101,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 76,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 77,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var userName = \\\"John\\\";\",",
+        "after": "\"before\": \"let userName = \\\"John\\\";\","
+      },
+      {
+        "line": 82,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 83,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var userAge = 25;\",",
+        "after": "\"before\": \"let userAge = 25;\","
+      },
+      {
+        "line": 88,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 89,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var result = eval(\\\"2 + 2\\\");\",",
+        "after": "\"before\": \"let result = eval(\\\"2 + 2\\\");\","
+      },
+      {
+        "line": 94,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 95,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var items = [1, 2, 3];\",",
+        "after": "\"before\": \"let items = [1, 2, 3];\","
+      },
+      {
+        "line": 100,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 101,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var x = null;\",",
+        "after": "\"before\": \"let x = null;\","
+      }
+    ],
+    "context": {}
+  }
+}

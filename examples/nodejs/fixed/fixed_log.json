@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-01-28T15:48:30.583904",
+  "input_file": "examples/nodejs/faulty.js",
+  "output_file": "examples/nodejs/fixed.js",
+  "language": "javascript",
+  "errors_count": 1,
+  "warnings_count": 17,
+  "fixes_count": 6,
+  "errors": [
+    {
+      "line": 27,
+      "code": "JS004",
+      "message": "eval() jest niebezpieczne"
+    }
+  ],
+  "warnings": [
+    {
+      "line": 4,
+      "code": "NODE001",
+      "message": "Rozważ ES modules zamiast require()"
+    },
+    {
+      "line": 5,
+      "code": "NODE001",
+      "message": "Rozważ ES modules zamiast require()"
+    },
+    {
+      "line": 6,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 6,
+      "code": "NODE001",
+      "message": "Rozważ ES modules zamiast require()"
+    },
+    {
+      "line": 8,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 8,
+      "code": "NODE002",
+      "message": "Synchroniczne I/O blokuje event loop"
+    },
+    {
+      "line": 9,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 11,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 15,
+      "code": "JS002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 20,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 20,
+      "code": "NODE002",
+      "message": "Synchroniczne I/O blokuje event loop"
+    },
+    {
+      "line": 21,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 23,
+      "code": "JS002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 27,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 32,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 33,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 33,
+      "code": "NODE002",
+      "message": "Synchroniczne I/O blokuje event loop"
+    }
+  ],
+  "fixes": [
+    {
+      "line": 6,
+      "message": "Zamieniono let na let",
+      "before": "let path = require('path');",
+      "after": "let path = require('path');"
+    },
+    {
+      "line": 8,
+      "message": "Zamieniono let na let",
+      "before": "let data = fs.readFileSync('/tmp/data.txt', 'utf8');",
+      "after": "let data = fs.readFileSync('/tmp/data.txt', 'utf8');"
+    },
+    {
+      "line": 11,
+      "message": "Zamieniono let na let",
+      "before": "let config = {",
+      "after": "let config = {"
+    },
+    {
+      "line": 20,
+      "message": "Zamieniono let na let",
+      "before": "let content = fs.readFileSync(filename);",
+      "after": "let content = fs.readFileSync(filename);"
+    },
+    {
+      "line": 27,
+      "message": "Zamieniono let na let",
+      "before": "let result = eval(content.toString());",
+      "after": "let result = eval(content.toString());"
+    },
+    {
+      "line": 33,
+      "message": "Zamieniono let na let",
+      "before": "let response = fs.readFileSync('./response.html');",
+      "after": "let response = fs.readFileSync('./response.html');"
+    }
+  ]
+}

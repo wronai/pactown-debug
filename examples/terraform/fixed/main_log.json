@@ -1,0 +1,88 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/terraform/main.tf",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/terraform/fixed/fixed_main.tf",
+  "language": "terraform",
+  "errors": 5,
+  "warnings": 1,
+  "fixes": 0,
+  "details": {
+    "language": "terraform",
+    "originalCode": "# Faulty Terraform configuration\n\nprovider \"aws\" {\n  region     = \"us-east-1\"\n  access_key = \"AKIAIOSFODNN7EXAMPLE\"\n  secret_key = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\"\n}\n\nresource \"aws_instance\" \"web\" {\n  ami           = \"ami-12345678\"\n  instance_type = \"t2.micro\"\n}\n\nresource \"aws_s3_bucket\" \"data\" {\n  bucket = \"my-app-data\"\n  acl    = \"public-read-write\"\n}\n\nresource \"aws_ebs_volume\" \"storage\" {\n  availability_zone = \"us-east-1a\"\n  size              = 100\n  encrypted         = false\n}\n\nresource \"aws_security_group\" \"allow_all\" {\n  name = \"allow_all\"\n  \n  ingress {\n    from_port   = 0\n    to_port     = 65535\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n}\n\nresource \"aws_db_instance\" \"database\" {\n  allocated_storage = 20\n  engine            = \"mysql\"\n  instance_class    = \"db.t2.micro\"\n  password          = \"admin123\"\n}\n\noutput \"bucket_url\" {\n  value = aws_s3_bucket.data.bucket_domain_name\n}\n",
+    "fixedCode": "# Faulty Terraform configuration\n\nprovider \"aws\" {\n  region     = \"us-east-1\"\n  access_key = \"AKIAIOSFODNN7EXAMPLE\"\n  secret_key = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\"\n}\n\nresource \"aws_instance\" \"web\" {\n  ami           = \"ami-12345678\"\n  instance_type = \"t2.micro\"\n}\n\nresource \"aws_s3_bucket\" \"data\" {\n  bucket = \"my-app-data\"\n  acl    = \"public-read-write\"\n}\n\nresource \"aws_ebs_volume\" \"storage\" {\n  availability_zone = \"us-east-1a\"\n  size              = 100\n  encrypted         = false\n}\n\nresource \"aws_security_group\" \"allow_all\" {\n  name = \"allow_all\"\n  \n  ingress {\n    from_port   = 0\n    to_port     = 65535\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n}\n\nresource \"aws_db_instance\" \"database\" {\n  allocated_storage = 20\n  engine            = \"mysql\"\n  instance_class    = \"db.t2.micro\"\n  password          = \"admin123\"\n}\n\noutput \"bucket_url\" {\n  value = aws_s3_bucket.data.bucket_domain_name\n}\n",
+    "errors": [
+      {
+        "line": 5,
+        "column": 1,
+        "code": "TF001",
+        "message": "Hardcoded credentials",
+        "severity": "warning"
+      },
+      {
+        "line": 6,
+        "column": 1,
+        "code": "TF001",
+        "message": "Hardcoded credentials",
+        "severity": "warning"
+      },
+      {
+        "line": 16,
+        "column": 1,
+        "code": "TF004",
+        "message": "Publiczny bucket S3",
+        "severity": "warning"
+      },
+      {
+        "line": 22,
+        "column": 1,
+        "code": "TF003",
+        "message": "Wyłączone szyfrowanie",
+        "severity": "warning"
+      },
+      {
+        "line": 40,
+        "column": 1,
+        "code": "TF001",
+        "message": "Hardcoded credentials",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 32,
+        "column": 1,
+        "code": "TF002",
+        "message": "0.0.0.0/0 otwiera dostęp z internetu",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {
+      "resources": [
+        {
+          "type": "aws_instance",
+          "name": "web"
+        },
+        {
+          "type": "aws_s3_bucket",
+          "name": "data"
+        },
+        {
+          "type": "aws_ebs_volume",
+          "name": "storage"
+        },
+        {
+          "type": "aws_security_group",
+          "name": "allow_all"
+        },
+        {
+          "type": "aws_db_instance",
+          "name": "database"
+        }
+      ],
+      "providers": [
+        "aws"
+      ],
+      "undefined_variables": []
+    }
+  }
+}

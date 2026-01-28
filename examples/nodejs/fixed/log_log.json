@@ -1,0 +1,260 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/nodejs/log.json",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/nodejs/fixed/fixed_log.json",
+  "language": "nodejs",
+  "errors": 3,
+  "warnings": 21,
+  "fixes": 12,
+  "details": {
+    "language": "nodejs",
+    "originalCode": "{\n  \"timestamp\": \"2026-01-28T15:48:30.583904\",\n  \"input_file\": \"examples/nodejs/faulty.js\",\n  \"output_file\": \"examples/nodejs/fixed.js\",\n  \"language\": \"javascript\",\n  \"errors_count\": 1,\n  \"warnings_count\": 17,\n  \"fixes_count\": 6,\n  \"errors\": [\n    {\n      \"line\": 27,\n      \"code\": \"JS004\",\n      \"message\": \"eval() jest niebezpieczne\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 4,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 5,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 6,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 6,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 8,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 8,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    },\n    {\n      \"line\": 9,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 11,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 15,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 20,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 20,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    },\n    {\n      \"line\": 21,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 23,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 27,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 32,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 33,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 33,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 6,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var path = require('path');\",\n      \"after\": \"let path = require('path');\"\n    },\n    {\n      \"line\": 8,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var data = fs.readFileSync('/tmp/data.txt', 'utf8');\",\n      \"after\": \"let data = fs.readFileSync('/tmp/data.txt', 'utf8');\"\n    },\n    {\n      \"line\": 11,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var config = {\",\n      \"after\": \"let config = {\"\n    },\n    {\n      \"line\": 20,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var content = fs.readFileSync(filename);\",\n      \"after\": \"let content = fs.readFileSync(filename);\"\n    },\n    {\n      \"line\": 27,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var result = eval(content.toString());\",\n      \"after\": \"let result = eval(content.toString());\"\n    },\n    {\n      \"line\": 33,\n      \"message\": \"Zamieniono var na let\",\n      \"before\": \"var response = fs.readFileSync('./response.html');\",\n      \"after\": \"let response = fs.readFileSync('./response.html');\"\n    }\n  ]\n}",
+    "fixedCode": "{\n  \"timestamp\": \"2026-01-28T15:48:30.583904\",\n  \"input_file\": \"examples/nodejs/faulty.js\",\n  \"output_file\": \"examples/nodejs/fixed.js\",\n  \"language\": \"javascript\",\n  \"errors_count\": 1,\n  \"warnings_count\": 17,\n  \"fixes_count\": 6,\n  \"errors\": [\n    {\n      \"line\": 27,\n      \"code\": \"JS004\",\n      \"message\": \"eval() jest niebezpieczne\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 4,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 5,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 6,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 6,\n      \"code\": \"NODE001\",\n      \"message\": \"Rozważ ES modules zamiast require()\"\n    },\n    {\n      \"line\": 8,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 8,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    },\n    {\n      \"line\": 9,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 11,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 15,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 20,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 20,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    },\n    {\n      \"line\": 21,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 23,\n      \"code\": \"JS002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 27,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 32,\n      \"code\": \"JS003\",\n      \"message\": \"console.log - usuń przed produkcją\"\n    },\n    {\n      \"line\": 33,\n      \"code\": \"JS001\",\n      \"message\": \"Użyj let lub const zamiast var\"\n    },\n    {\n      \"line\": 33,\n      \"code\": \"NODE002\",\n      \"message\": \"Synchroniczne I/O blokuje event loop\"\n    }\n  ],\n  \"fixes\": [\n    {\n      \"line\": 6,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let path = require('path');\",\n      \"after\": \"let path = require('path');\"\n    },\n    {\n      \"line\": 8,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let data = fs.readFileSync('/tmp/data.txt', 'utf8');\",\n      \"after\": \"let data = fs.readFileSync('/tmp/data.txt', 'utf8');\"\n    },\n    {\n      \"line\": 11,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let config = {\",\n      \"after\": \"let config = {\"\n    },\n    {\n      \"line\": 20,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let content = fs.readFileSync(filename);\",\n      \"after\": \"let content = fs.readFileSync(filename);\"\n    },\n    {\n      \"line\": 27,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let result = eval(content.toString());\",\n      \"after\": \"let result = eval(content.toString());\"\n    },\n    {\n      \"line\": 33,\n      \"message\": \"Zamieniono let na let\",\n      \"before\": \"let response = fs.readFileSync('./response.html');\",\n      \"after\": \"let response = fs.readFileSync('./response.html');\"\n    }\n  ]\n}",
+    "errors": [
+      {
+        "line": 13,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      },
+      {
+        "line": 131,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      },
+      {
+        "line": 132,
+        "column": 1,
+        "code": "JS004",
+        "message": "eval() jest niebezpieczne - unikaj",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 50,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 75,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 90,
+        "column": 1,
+        "code": "JS003",
+        "message": "console.log w kodzie produkcyjnym",
+        "severity": "warning"
+      },
+      {
+        "line": 106,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 107,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 112,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 113,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 113,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      },
+      {
+        "line": 114,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      },
+      {
+        "line": 118,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 119,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 124,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 125,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 125,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      },
+      {
+        "line": 126,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      },
+      {
+        "line": 130,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 131,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 136,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 137,
+        "column": 1,
+        "code": "JS001",
+        "message": "Użyj let/const zamiast var",
+        "severity": "warning"
+      },
+      {
+        "line": 137,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      },
+      {
+        "line": 138,
+        "column": 1,
+        "code": "NODE002",
+        "message": "Sync I/O blokuje event loop - użyj async",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 106,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 107,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var path = require('path');\",",
+        "after": "\"before\": \"let path = require('path');\","
+      },
+      {
+        "line": 112,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 113,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var data = fs.readFileSync('/tmp/data.txt', 'utf8');\",",
+        "after": "\"before\": \"let data = fs.readFileSync('/tmp/data.txt', 'utf8');\","
+      },
+      {
+        "line": 118,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 119,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var config = {\",",
+        "after": "\"before\": \"let config = {\","
+      },
+      {
+        "line": 124,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 125,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var content = fs.readFileSync(filename);\",",
+        "after": "\"before\": \"let content = fs.readFileSync(filename);\","
+      },
+      {
+        "line": 130,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 131,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var result = eval(content.toString());\",",
+        "after": "\"before\": \"let result = eval(content.toString());\","
+      },
+      {
+        "line": 136,
+        "description": "Zamieniono var na let",
+        "before": "\"message\": \"Zamieniono var na let\",",
+        "after": "\"message\": \"Zamieniono let na let\","
+      },
+      {
+        "line": 137,
+        "description": "Zamieniono var na let",
+        "before": "\"before\": \"var response = fs.readFileSync('./response.html');\",",
+        "after": "\"before\": \"let response = fs.readFileSync('./response.html');\","
+      }
+    ],
+    "context": {}
+  }
+}

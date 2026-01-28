@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-01-28T15:48:23.265351",
+  "input_file": "examples/javascript/faulty.js",
+  "output_file": "examples/javascript/fixed.js",
+  "language": "javascript",
+  "errors_count": 1,
+  "warnings_count": 11,
+  "fixes_count": 5,
+  "errors": [
+    {
+      "line": 13,
+      "code": "JS004",
+      "message": "eval() jest niebezpieczne"
+    }
+  ],
+  "warnings": [
+    {
+      "line": 3,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 4,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 7,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 9,
+      "code": "JS002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 10,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 13,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 17,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 19,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    },
+    {
+      "line": 35,
+      "code": "JS001",
+      "message": "Użyj let lub const zamiast var"
+    },
+    {
+      "line": 36,
+      "code": "JS002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 37,
+      "code": "JS003",
+      "message": "console.log - usuń przed produkcją"
+    }
+  ],
+  "fixes": [
+    {
+      "line": 3,
+      "message": "Zamieniono let na let",
+      "before": "let userName = \"John\";",
+      "after": "let userName = \"John\";"
+    },
+    {
+      "line": 4,
+      "message": "Zamieniono let na let",
+      "before": "let userAge = 25;",
+      "after": "let userAge = 25;"
+    },
+    {
+      "line": 13,
+      "message": "Zamieniono let na let",
+      "before": "let result = eval(\"2 + 2\");",
+      "after": "let result = eval(\"2 + 2\");"
+    },
+    {
+      "line": 17,
+      "message": "Zamieniono let na let",
+      "before": "let items = [1, 2, 3];",
+      "after": "let items = [1, 2, 3];"
+    },
+    {
+      "line": 35,
+      "message": "Zamieniono let na let",
+      "before": "let x = null;",
+      "after": "let x = null;"
+    }
+  ]
+}

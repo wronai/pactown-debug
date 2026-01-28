@@ -1,0 +1,96 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/docker-compose/docker-compose.yml",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/docker-compose/fixed/fixed_docker-compose.yml",
+  "language": "docker-compose",
+  "errors": 5,
+  "warnings": 5,
+  "fixes": 0,
+  "details": {
+    "language": "docker-compose",
+    "originalCode": "version: '3.8'\nservices:\n  web:\n    image: nginx\n    privileged: true\n    network_mode: host\n    environment:\n      - DATABASE_PASSWORD=mysecret123\n      - API_KEY=abcdef\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ./data:/data:rw\n  \n  db:\n    image: postgres:latest\n    environment:\n      POSTGRES_PASSWORD=admin123\n    volumes:\n      - db_data:/var/lib/postgresql/data\n\n  redis:\n    image: redis\n\nvolumes:\n  db_data:\n",
+    "fixedCode": "version: '3.8'\nservices:\n  web:\n    image: nginx\n    privileged: true\n    network_mode: host\n    environment:\n      - DATABASE_PASSWORD=mysecret123\n      - API_KEY=abcdef\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ./data:/data:rw\n  \n  db:\n    image: postgres:latest\n    environment:\n      POSTGRES_PASSWORD=admin123\n    volumes:\n      - db_data:/var/lib/postgresql/data\n\n  redis:\n    image: redis\n\nvolumes:\n  db_data:\n",
+    "errors": [
+      {
+        "line": 5,
+        "column": 1,
+        "code": "COMPOSE002",
+        "message": "privileged: true jest niebezpieczne",
+        "severity": "warning"
+      },
+      {
+        "line": 8,
+        "column": 1,
+        "code": "COMPOSE005",
+        "message": "Hardcoded secret - użyj .env",
+        "severity": "warning"
+      },
+      {
+        "line": 9,
+        "column": 1,
+        "code": "COMPOSE005",
+        "message": "Hardcoded secret - użyj .env",
+        "severity": "warning"
+      },
+      {
+        "line": 11,
+        "column": 1,
+        "code": "COMPOSE004",
+        "message": "Montowanie docker.sock daje pełny dostęp",
+        "severity": "warning"
+      },
+      {
+        "line": 17,
+        "column": 1,
+        "code": "COMPOSE005",
+        "message": "Hardcoded secret - użyj .env",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 4,
+        "column": 1,
+        "code": "COMPOSE001",
+        "message": "Użyj konkretnego tagu wersji",
+        "severity": "warning"
+      },
+      {
+        "line": 6,
+        "column": 1,
+        "code": "COMPOSE003",
+        "message": "network_mode: host omija izolację",
+        "severity": "warning"
+      },
+      {
+        "line": 15,
+        "column": 1,
+        "code": "COMPOSE001",
+        "message": "Użyj konkretnego tagu wersji",
+        "severity": "warning"
+      },
+      {
+        "line": 22,
+        "column": 1,
+        "code": "COMPOSE001",
+        "message": "Użyj konkretnego tagu wersji",
+        "severity": "warning"
+      },
+      {
+        "line": 1,
+        "column": 1,
+        "code": "COMPOSE006",
+        "message": "Zdefiniuj networks dla 4 serwisów",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {
+      "services": [
+        "web",
+        "db",
+        "redis",
+        "db_data"
+      ]
+    }
+  }
+}

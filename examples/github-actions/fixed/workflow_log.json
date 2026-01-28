@@ -1,0 +1,81 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/github-actions/workflow.yml",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/github-actions/fixed/fixed_workflow.yml",
+  "language": "github-actions",
+  "errors": 2,
+  "warnings": 5,
+  "fixes": 2,
+  "details": {
+    "language": "github-actions",
+    "originalCode": "name: CI Pipeline\non:\n  push:\n    branches: [main]\n  pull_request_target:\n    branches: [main]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@master\n      - uses: actions/setup-node@main\n      \n      - name: Install dependencies\n        run: npm install\n      \n      - name: Run tests\n        run: echo \"Running tests for ${{ github.event.pull_request.title }}\"\n        env:\n          API_KEY: \"hardcoded-api-key-123\"\n          SECRET_TOKEN: \"my-secret-token\"\n      \n      - name: Deploy\n        run: |\n          echo \"Deploying ${{ github.event.inputs.version }}\"\n          curl -X POST https://api.example.com/deploy\n",
+    "fixedCode": "name: CI Pipeline\non:\n  push:\n    branches: [main]\n  pull_request_target:\n    branches: [main]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n      \n      - name: Install dependencies\n        run: npm install\n      \n      - name: Run tests\n        run: echo \"Running tests for ${{ github.event.pull_request.title }}\"\n        env:\n          API_KEY: \"hardcoded-api-key-123\"\n          SECRET_TOKEN: \"my-secret-token\"\n      \n      - name: Deploy\n        run: |\n          echo \"Deploying ${{ github.event.inputs.version }}\"\n          curl -X POST https://api.example.com/deploy\n",
+    "errors": [
+      {
+        "line": 21,
+        "column": 1,
+        "code": "GHA003",
+        "message": "Hardcoded secret - użyj ${{ secrets.NAME }}",
+        "severity": "warning"
+      },
+      {
+        "line": 22,
+        "column": 1,
+        "code": "GHA003",
+        "message": "Hardcoded secret - użyj ${{ secrets.NAME }}",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 5,
+        "column": 1,
+        "code": "GHA002",
+        "message": "pull_request_target może być niebezpieczne",
+        "severity": "warning"
+      },
+      {
+        "line": 8,
+        "column": 1,
+        "code": "GHA005",
+        "message": "Ustaw minimalne permissions",
+        "severity": "warning"
+      },
+      {
+        "line": 12,
+        "column": 1,
+        "code": "GHA001",
+        "message": "Użyj wersji/SHA zamiast @master",
+        "severity": "warning"
+      },
+      {
+        "line": 13,
+        "column": 1,
+        "code": "GHA001",
+        "message": "Użyj wersji/SHA zamiast @master",
+        "severity": "warning"
+      },
+      {
+        "line": 19,
+        "column": 1,
+        "code": "GHA004",
+        "message": "Możliwy shell injection",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 12,
+        "description": "Zmieniono na wersję",
+        "before": "- uses: actions/checkout@master",
+        "after": "- uses: actions/checkout@v4"
+      },
+      {
+        "line": 13,
+        "description": "Zmieniono na wersję",
+        "before": "- uses: actions/setup-node@main",
+        "after": "- uses: actions/setup-node@v4"
+      }
+    ],
+    "context": {}
+  }
+}

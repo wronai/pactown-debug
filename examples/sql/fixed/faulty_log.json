@@ -1,0 +1,88 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/sql/faulty.sql",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/sql/fixed/fixed_faulty.sql",
+  "language": "sql",
+  "errors": 2,
+  "warnings": 5,
+  "fixes": 1,
+  "details": {
+    "language": "sql",
+    "originalCode": "-- Faulty SQL with common issues\n\nCREATE TABLE users (\n    id INT PRIMARY KEY,\n    username VARCHAR(50),\n    password VARCHAR(100)\n);\n\nSELECT * FROM users;\n\nUPDATE users SET status = 'active';\n\nDELETE FROM orders;\n\nDROP TABLE old_logs;\n\nINSERT INTO users VALUES (1, 'admin', 'password123');\n\nSELECT * FROM users WHERE username = '' + @input + '';\n\nGRANT ALL PRIVILEGES ON *.* TO 'app_user'@'%';\n\nCREATE USER 'backup'@'localhost' IDENTIFIED BY 'backup_pass_123';\n\nSELECT id, name FROM products ORDER BY created_at;\n",
+    "fixedCode": "-- Faulty SQL with common issues\n\nCREATE TABLE users (\n    id INT PRIMARY KEY,\n    username VARCHAR(50),\n    password VARCHAR(100)\n);\n\nSELECT * FROM users;\n\nUPDATE users SET status = 'active';\n\nDELETE FROM orders;\n\nDROP IF EXISTS TABLE old_logs;\n\nINSERT INTO users VALUES (1, 'admin', 'password123');\n\nSELECT * FROM users WHERE username = '' + @input + '';\n\nGRANT ALL PRIVILEGES ON *.* TO 'app_user'@'%';\n\nCREATE USER 'backup'@'localhost' IDENTIFIED BY 'backup_pass_123';\n\nSELECT id, name FROM products ORDER BY created_at;\n",
+    "errors": [
+      {
+        "line": 11,
+        "column": 1,
+        "code": "SQL003",
+        "message": "UPDATE/DELETE bez WHERE!",
+        "severity": "warning"
+      },
+      {
+        "line": 13,
+        "column": 1,
+        "code": "SQL003",
+        "message": "UPDATE/DELETE bez WHERE!",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 3,
+        "column": 1,
+        "code": "SQL005",
+        "message": "CREATE bez IF NOT EXISTS",
+        "severity": "warning"
+      },
+      {
+        "line": 9,
+        "column": 1,
+        "code": "SQL001",
+        "message": "SELECT * - wymień konkretne kolumny",
+        "severity": "warning"
+      },
+      {
+        "line": 15,
+        "column": 1,
+        "code": "SQL004",
+        "message": "DROP bez IF EXISTS",
+        "severity": "warning"
+      },
+      {
+        "line": 19,
+        "column": 1,
+        "code": "SQL001",
+        "message": "SELECT * - wymień konkretne kolumny",
+        "severity": "warning"
+      },
+      {
+        "line": 21,
+        "column": 1,
+        "code": "SQL007",
+        "message": "GRANT ALL - przyznaj tylko wymagane uprawnienia",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [
+      {
+        "line": 15,
+        "description": "Dodano IF EXISTS",
+        "before": "DROP TABLE old_logs;",
+        "after": "DROP IF EXISTS TABLE old_logs;"
+      }
+    ],
+    "context": {
+      "tables_created": [
+        "users"
+      ],
+      "tables_referenced": [
+        "products",
+        "orders",
+        "users"
+      ],
+      "potentially_missing": [
+        "products",
+        "orders"
+      ]
+    }
+  }
+}

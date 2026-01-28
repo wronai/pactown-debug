@@ -1,0 +1,54 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/ansible/playbook.yml",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/ansible/fixed/fixed_playbook.yml",
+  "language": "ansible",
+  "errors": 1,
+  "warnings": 4,
+  "fixes": 0,
+  "details": {
+    "language": "ansible",
+    "originalCode": "---\n- hosts: webservers\n  become: true\n  tasks:\n    - name: Install packages\n      apt:\n        name: nginx\n        state: present\n    \n    - name: Configure database\n      mysql_user:\n        name: app_user\n        password: \"mypassword123\"\n        priv: '*.*:ALL'\n    \n    - shell: cat /etc/passwd\n    \n    - command: ls -la /root\n    \n    - name: Run custom script\n      shell: ./deploy.sh\n      ignore_errors: true\n    \n    - name: Copy config\n      copy:\n        src: config.yml\n        dest: /etc/app/config.yml\n        mode: '0644'\n",
+    "fixedCode": "---\n- hosts: webservers\n  become: true\n  tasks:\n    - name: Install packages\n      apt:\n        name: nginx\n        state: present\n    \n    - name: Configure database\n      mysql_user:\n        name: app_user\n        password: \"mypassword123\"\n        priv: '*.*:ALL'\n    \n    - shell: cat /etc/passwd\n    \n    - command: ls -la /root\n    \n    - name: Run custom script\n      shell: ./deploy.sh\n      ignore_errors: true\n    \n    - name: Copy config\n      copy:\n        src: config.yml\n        dest: /etc/app/config.yml\n        mode: '0644'\n",
+    "errors": [
+      {
+        "line": 13,
+        "column": 1,
+        "code": "ANS001",
+        "message": "Plain text password - użyj ansible-vault",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 3,
+        "column": 1,
+        "code": "ANS003",
+        "message": "become bez become_user",
+        "severity": "warning"
+      },
+      {
+        "line": 16,
+        "column": 1,
+        "code": "ANS002",
+        "message": "shell/command bez changed_when",
+        "severity": "warning"
+      },
+      {
+        "line": 18,
+        "column": 1,
+        "code": "ANS002",
+        "message": "shell/command bez changed_when",
+        "severity": "warning"
+      },
+      {
+        "line": 22,
+        "column": 1,
+        "code": "ANS004",
+        "message": "ignore_errors ukrywa błędy",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {}
+  }
+}

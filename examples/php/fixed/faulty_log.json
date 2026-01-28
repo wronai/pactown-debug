@@ -1,0 +1,61 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/php/faulty.php",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/php/fixed/fixed_faulty.php",
+  "language": "php",
+  "errors": 3,
+  "warnings": 3,
+  "fixes": 0,
+  "details": {
+    "language": "php",
+    "originalCode": "<?php\n// Faulty PHP code with common issues\n\n$user_input = $_GET['name']\n\necho \"Hello \" . $user_input\n\nif ($user_input == null) {\n    echo \"No name provided\"\n}\n\n$conn = mysql_connect(\"localhost\", \"root\", \"password\");\n$result = mysql_query(\"SELECT * FROM users WHERE name = '$user_input'\");\n\nextract($_POST);\n\n$data = @file_get_contents($url);\n\nfunction process($items = []) {\n    foreach ($items as $item) {\n        if ($item == \"\") {\n            continue;\n        }\n        echo $item\n    }\n}\n\n<?= $output ?>\n",
+    "fixedCode": "<?php\n// Faulty PHP code with common issues\n\n$user_input = $_GET['name']\n\necho \"Hello \" . $user_input\n\nif ($user_input == null) {\n    echo \"No name provided\"\n}\n\n$conn = mysql_connect(\"localhost\", \"root\", \"password\");\n$result = mysql_query(\"SELECT * FROM users WHERE name = '$user_input'\");\n\nextract($_POST);\n\n$data = @file_get_contents($url);\n\nfunction process($items = []) {\n    foreach ($items as $item) {\n        if ($item == \"\") {\n            continue;\n        }\n        echo $item\n    }\n}\n\n<?= $output ?>\n",
+    "errors": [
+      {
+        "line": 12,
+        "column": 1,
+        "code": "PHP003",
+        "message": "Przestarzałe funkcje mysql_* - użyj PDO lub mysqli",
+        "severity": "warning"
+      },
+      {
+        "line": 13,
+        "column": 1,
+        "code": "PHP003",
+        "message": "Przestarzałe funkcje mysql_* - użyj PDO lub mysqli",
+        "severity": "warning"
+      },
+      {
+        "line": 15,
+        "column": 1,
+        "code": "PHP004",
+        "message": "extract() jest niebezpieczne - użyj jawnego przypisania",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [
+      {
+        "line": 4,
+        "column": 1,
+        "code": "PHP001",
+        "message": "Niezwalidowane dane wejściowe - użyj filter_input lub htmlspecialchars",
+        "severity": "warning"
+      },
+      {
+        "line": 8,
+        "column": 1,
+        "code": "PHP002",
+        "message": "Użyj === zamiast == dla porównań",
+        "severity": "warning"
+      },
+      {
+        "line": 28,
+        "column": 1,
+        "code": "PHP006",
+        "message": "Użyj pełnego <?php zamiast short tags",
+        "severity": "warning"
+      }
+    ],
+    "fixes": [],
+    "context": {}
+  }
+}

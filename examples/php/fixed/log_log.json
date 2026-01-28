@@ -1,0 +1,25 @@
+{
+  "source": "/home/tom/github/wronai/pactown-debug/examples/php/log.json",
+  "fixed": "/home/tom/github/wronai/pactown-debug/examples/php/fixed/fixed_log.json",
+  "language": "php",
+  "errors": 1,
+  "warnings": 0,
+  "fixes": 0,
+  "details": {
+    "language": "php",
+    "originalCode": "{\n  \"timestamp\": \"2026-01-28T15:48:15.358372\",\n  \"input_file\": \"examples/php/faulty.php\",\n  \"output_file\": \"examples/php/fixed.php\",\n  \"language\": \"php\",\n  \"errors_count\": 2,\n  \"warnings_count\": 5,\n  \"fixes_count\": 0,\n  \"errors\": [\n    {\n      \"line\": 12,\n      \"code\": \"PHP003\",\n      \"message\": \"Funkcje mysql_* są przestarzałe\"\n    },\n    {\n      \"line\": 13,\n      \"code\": \"PHP003\",\n      \"message\": \"Funkcje mysql_* są przestarzałe\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 8,\n      \"code\": \"PHP002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 15,\n      \"code\": \"PHP004\",\n      \"message\": \"extract() może być niebezpieczne\"\n    },\n    {\n      \"line\": 17,\n      \"code\": \"PHP005\",\n      \"message\": \"Operator @ tłumi błędy\"\n    },\n    {\n      \"line\": 21,\n      \"code\": \"PHP002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 28,\n      \"code\": \"PHP006\",\n      \"message\": \"Używaj pełnego tagu <?php\"\n    }\n  ],\n  \"fixes\": []\n}",
+    "fixedCode": "{\n  \"timestamp\": \"2026-01-28T15:48:15.358372\",\n  \"input_file\": \"examples/php/faulty.php\",\n  \"output_file\": \"examples/php/fixed.php\",\n  \"language\": \"php\",\n  \"errors_count\": 2,\n  \"warnings_count\": 5,\n  \"fixes_count\": 0,\n  \"errors\": [\n    {\n      \"line\": 12,\n      \"code\": \"PHP003\",\n      \"message\": \"Funkcje mysql_* są przestarzałe\"\n    },\n    {\n      \"line\": 13,\n      \"code\": \"PHP003\",\n      \"message\": \"Funkcje mysql_* są przestarzałe\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"line\": 8,\n      \"code\": \"PHP002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 15,\n      \"code\": \"PHP004\",\n      \"message\": \"extract() może być niebezpieczne\"\n    },\n    {\n      \"line\": 17,\n      \"code\": \"PHP005\",\n      \"message\": \"Operator @ tłumi błędy\"\n    },\n    {\n      \"line\": 21,\n      \"code\": \"PHP002\",\n      \"message\": \"Użyj === zamiast ==\"\n    },\n    {\n      \"line\": 28,\n      \"code\": \"PHP006\",\n      \"message\": \"Używaj pełnego tagu <?php\"\n    }\n  ],\n  \"fixes\": []\n}",
+    "errors": [
+      {
+        "line": 30,
+        "column": 1,
+        "code": "PHP004",
+        "message": "extract() jest niebezpieczne - użyj jawnego przypisania",
+        "severity": "warning"
+      }
+    ],
+    "warnings": [],
+    "fixes": [],
+    "context": {}
+  }
+}

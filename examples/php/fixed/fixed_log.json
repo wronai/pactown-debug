@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-01-28T15:48:15.358372",
+  "input_file": "examples/php/faulty.php",
+  "output_file": "examples/php/fixed.php",
+  "language": "php",
+  "errors_count": 2,
+  "warnings_count": 5,
+  "fixes_count": 0,
+  "errors": [
+    {
+      "line": 12,
+      "code": "PHP003",
+      "message": "Funkcje mysql_* są przestarzałe"
+    },
+    {
+      "line": 13,
+      "code": "PHP003",
+      "message": "Funkcje mysql_* są przestarzałe"
+    }
+  ],
+  "warnings": [
+    {
+      "line": 8,
+      "code": "PHP002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 15,
+      "code": "PHP004",
+      "message": "extract() może być niebezpieczne"
+    },
+    {
+      "line": 17,
+      "code": "PHP005",
+      "message": "Operator @ tłumi błędy"
+    },
+    {
+      "line": 21,
+      "code": "PHP002",
+      "message": "Użyj === zamiast =="
+    },
+    {
+      "line": 28,
+      "code": "PHP006",
+      "message": "Używaj pełnego tagu <?php"
+    }
+  ],
+  "fixes": []
+}
