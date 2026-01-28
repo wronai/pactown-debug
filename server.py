@@ -8,16 +8,21 @@ import json
 import subprocess
 import re
 import os
+import time
 import urllib.request
 import urllib.error
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 PACTFIX_API_URL = os.environ.get('PACTFIX_API_URL', '')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+REPO_ROOT = Path(__file__).resolve().parent
 
 # Common bash fixes - patterns and their corrections
 BASH_FIXES = [
@@ -318,6 +323,151 @@ def add_fix_comments(code: str, fixes: list) -> str:
                 lines[line_num] = lines[line_num].rstrip() + comment
     
     return '\n'.join(lines)
+
+
+def _is_path_within(base: Path, target: Path) -> bool:
+    try:
+        base_resolved = base.resolve()
+        target_resolved = target.resolve()
+    except Exception:
+        return False
+    try:
+        return os.path.commonpath([str(base_resolved), str(target_resolved)]) == str(base_resolved)
+    except Exception:
+        return False
+
+
+def _read_text_file(path: Path, max_bytes: int) -> tuple[str | None, str | None]:
+    try:
+        if path.is_symlink():
+            return None, 'symlink'
+        size = path.stat().st_size
+        if size > max_bytes:
+            return None, 'too_large'
+        with path.open('rb') as f:
+            data = f.read(max_bytes + 1)
+        if len(data) > max_bytes:
+            return None, 'too_large'
+        if b'\x00' in data:
+            return None, 'binary'
+        try:
+            return data.decode('utf-8'), None
+        except UnicodeDecodeError:
+            return data.decode('utf-8', errors='replace'), None
+    except Exception:
+        return None, 'read_error'
+
+
+def batch_analyze_directory(
+    root: str | None = None,
+    max_files: int = 500,
+    max_bytes: int = 200_000,
+    include_hidden: bool = False,
+    include_details: bool = False,
+    workers: int | None = None,
+) -> dict:
+    requested_root = (root or '').strip()
+    if not requested_root:
+        root_path = (REPO_ROOT / 'examples').resolve()
+    else:
+        candidate = Path(requested_root)
+        root_path = (candidate if candidate.is_absolute() else (REPO_ROOT / candidate)).resolve()
+
+    if not _is_path_within(REPO_ROOT, root_path):
+        raise ValueError('root must be within repository')
+    if not root_path.exists() or not root_path.is_dir():
+        raise ValueError('root must be an existing directory')
+
+    max_files = int(max_files) if max_files is not None else 500
+    max_bytes = int(max_bytes) if max_bytes is not None else 200_000
+    if max_files <= 0:
+        max_files = 1
+    if max_bytes <= 0:
+        max_bytes = 1
+
+    file_paths: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(str(root_path)):
+        if not include_hidden:
+            dirnames[:] = [d for d in dirnames if not d.startswith('.')]
+            filenames = [f for f in filenames if not f.startswith('.')]
+        for fn in filenames:
+            if len(file_paths) >= max_files:
+                break
+            p = Path(dirpath) / fn
+            file_paths.append(p)
+        if len(file_paths) >= max_files:
+            break
+
+    t0 = time.perf_counter()
+    totals = {
+        'filesListed': len(file_paths),
+        'filesAnalyzed': 0,
+        'filesSkipped': 0,
+        'errors': 0,
+        'warnings': 0,
+        'fixes': 0,
+    }
+    files: list[dict] = []
+
+    def _analyze_one(p: Path) -> dict:
+        rel = None
+        try:
+            rel = str(p.resolve().relative_to(REPO_ROOT))
+        except Exception:
+            rel = str(p)
+
+        code, skip_reason = _read_text_file(p, max_bytes=max_bytes)
+        if code is None:
+            return {
+                'path': rel,
+                'skipped': True,
+                'skipReason': skip_reason,
+                'errors': 0,
+                'warnings': 0,
+                'fixes': 0,
+            }
+
+        result = analyze_code_multi(code, filename=str(p))
+        errors = result.get('errors') or []
+        warnings = result.get('warnings') or []
+        fixes = result.get('fixes') or []
+
+        item = {
+            'path': rel,
+            'skipped': False,
+            'language': result.get('language'),
+            'errors': len(errors),
+            'warnings': len(warnings),
+            'fixes': len(fixes),
+        }
+        if include_details:
+            item['errorItems'] = errors
+            item['warningItems'] = warnings
+            item['fixItems'] = fixes
+        return item
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = [ex.submit(_analyze_one, p) for p in file_paths]
+        for fut in as_completed(futures):
+            item = fut.result()
+            files.append(item)
+            if item.get('skipped'):
+                totals['filesSkipped'] += 1
+            else:
+                totals['filesAnalyzed'] += 1
+                totals['errors'] += int(item.get('errors') or 0)
+                totals['warnings'] += int(item.get('warnings') or 0)
+                totals['fixes'] += int(item.get('fixes') or 0)
+
+    files.sort(key=lambda x: (-(x.get('errors') or 0), -(x.get('warnings') or 0), x.get('path') or ''))
+    duration_ms = int((time.perf_counter() - t0) * 1000)
+
+    return {
+        'root': str(root_path),
+        'durationMs': duration_ms,
+        'totals': totals,
+        'files': files,
+    }
 
 
 def analyze_python_code(code: str) -> dict:
@@ -1491,6 +1641,44 @@ class DebugHandler(SimpleHTTPRequestHandler):
     
     def do_POST(self):
         """Handle POST requests for code analysis."""
+        if self.path == '/api/batch_analyze':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+
+            try:
+                data = json.loads(body or b'{}')
+                root = data.get('root')
+                max_files = data.get('max_files', 500)
+                max_bytes = data.get('max_bytes', 200_000)
+                include_hidden = bool(data.get('include_hidden', False))
+                include_details = bool(data.get('include_details', False))
+                workers = data.get('workers')
+                if workers is not None:
+                    workers = int(workers)
+
+                result = batch_analyze_directory(
+                    root=root,
+                    max_files=max_files,
+                    max_bytes=max_bytes,
+                    include_hidden=include_hidden,
+                    include_details=include_details,
+                    workers=workers,
+                )
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode())
+            except json.JSONDecodeError as e:
+                self.send_error(400, f'Invalid JSON: {e}')
+            except ValueError as e:
+                self.send_error(400, str(e))
+            except Exception as e:
+                logger.error(f"Batch analysis error: {e}")
+                self.send_error(500, str(e))
+            return
+
         if self.path == '/api/analyze':
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)

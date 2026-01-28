@@ -927,7 +927,7 @@
             function highlightPlain(s) {
                 let out = '';
                 let last = 0;
-                s.replace(tokenRe, (m, varTok, _kwTok, offset) => {
+                s.replace(tokenRe, (m, varTok, offset) => {
                     out += escapeHtml(s.slice(last, offset));
                     if (m.startsWith('$')) out += `<span class="variable">${escapeHtml(m)}</span>`;
                     else out += `<span class="keyword">${escapeHtml(m)}</span>`;
