@@ -364,6 +364,16 @@
             border-radius: 4px;
         }
 
+        .warning-annotation {
+            display: block;
+            color: var(--accent-yellow);
+            font-size: 12px;
+            padding: 5px 0 5px 25px;
+            background: var(--warning-bg);
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
         .fix-annotation {
             display: block;
             color: var(--accent-green);
@@ -854,14 +864,14 @@
                 lineNums += lineNum + '\n';
                 
                 // Check if this line has an error
-                const error = result.errors?.find(e => e.line === lineNum);
-                const fix = result.fixes?.find(f => f.line === lineNum);
-                const warning = result.warnings?.find(w => w.line === lineNum);
+                const errors = (result.errors || []).filter(e => e.line === lineNum);
+                const fixes = (result.fixes || []).filter(f => f.line === lineNum);
+                const warnings = (result.warnings || []).filter(w => w.line === lineNum);
                 
                 let lineClass = '';
-                if (fix) lineClass = 'fixed';
-                else if (error) lineClass = 'error';
-                else if (warning) lineClass = 'warning';
+                if (errors.length) lineClass = 'error';
+                else if (fixes.length) lineClass = 'fixed';
+                else if (warnings.length) lineClass = 'warning';
                 
                 // Syntax highlight the line
                 const highlighted = highlightSyntax(line);
@@ -869,19 +879,25 @@
                 html += `<span class="code-line ${lineClass}">${highlighted}</span>\n`;
                 
                 // Add annotation if there's a fix
-                if (fix && fix.message) {
-                    html += `<span class="fix-annotation">✅ ${escapeHtml(fix.message)}</span>\n`;
-                }
+                fixes.forEach(fix => {
+                    if (fix && fix.message) {
+                        html += `<span class="fix-annotation">✅ ${escapeHtml(fix.message)}</span>\n`;
+                    }
+                });
                 
                 // Add error annotation
-                if (error && error.message && !fix) {
-                    html += `<span class="error-annotation">❌ ${escapeHtml(error.message)}</span>\n`;
-                }
+                errors.forEach(error => {
+                    if (error && error.message) {
+                        html += `<span class="error-annotation">❌ ${escapeHtml(error.message)}</span>\n`;
+                    }
+                });
                 
                 // Add warning annotation
-                if (warning && warning.message) {
-                    html += `<span class="error-annotation" style="color: var(--accent-yellow); background: var(--warning-bg);">⚠️ ${escapeHtml(warning.message)}</span>\n`;
-                }
+                warnings.forEach(warning => {
+                    if (warning && warning.message) {
+                        html += `<span class="warning-annotation">⚠️ ${escapeHtml(warning.message)}</span>\n`;
+                    }
+                });
             });
             
             outputLineNumbers.textContent = lineNums;
@@ -889,29 +905,63 @@
         }
 
         function highlightSyntax(line) {
-            let escaped = escapeHtml(line);
-            
-            // Comments
-            escaped = escaped.replace(/(#.*)$/gm, '<span class="comment">$1</span>');
-            
-            // Keywords
             const keywords = ['if', 'then', 'else', 'elif', 'fi', 'for', 'do', 'done', 'while', 'until', 'case', 'esac', 'function', 'return', 'local', 'export', 'source', 'in'];
-            keywords.forEach(kw => {
-                const regex = new RegExp(`\\b(${kw})\\b`, 'g');
-                escaped = escaped.replace(regex, '<span class="keyword">$1</span>');
-            });
-            
-            // Strings
-            escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, '<span class="string">$1</span>');
-            escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="string">$1</span>');
-            
-            // Variables
-            escaped = escaped.replace(/(\$\{[^}]+\}|\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span class="variable">$1</span>');
-            
-            // Commands at start
-            escaped = escaped.replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_-]*)/, '$1<span class="command">$2</span>');
-            
-            return escaped;
+            const kwPattern = `\\b(?:${keywords.join('|')})\\b`;
+            const varPattern = `(\\$\\{[^}]+\\}|\\$[a-zA-Z_][a-zA-Z0-9_]*)`;
+            const tokenRe = new RegExp(`${varPattern}|${kwPattern}`, 'g');
+            const strRe = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g;
+
+            function splitComment(s) {
+                let inS = false;
+                let inD = false;
+                for (let i = 0; i < s.length; i++) {
+                    const ch = s[i];
+                    const prev = i > 0 ? s[i - 1] : '';
+                    if (ch === '"' && !inS && prev !== '\\') inD = !inD;
+                    else if (ch === "'" && !inD && prev !== '\\') inS = !inS;
+                    else if (ch === '#' && !inS && !inD) return [s.slice(0, i), s.slice(i)];
+                }
+                return [s, ''];
+            }
+
+            function highlightPlain(s) {
+                let out = '';
+                let last = 0;
+                s.replace(tokenRe, (m, varTok, _kwTok, offset) => {
+                    out += escapeHtml(s.slice(last, offset));
+                    if (m.startsWith('$')) out += `<span class="variable">${escapeHtml(m)}</span>`;
+                    else out += `<span class="keyword">${escapeHtml(m)}</span>`;
+                    last = offset + m.length;
+                    return m;
+                });
+                out += escapeHtml(s.slice(last));
+                return out;
+            }
+
+            function highlightCode(s) {
+                let html = '';
+                const cmdMatch = s.match(/^(\s*)([a-zA-Z_][a-zA-Z0-9_-]*)/);
+                let rest = s;
+                if (cmdMatch) {
+                    html += escapeHtml(cmdMatch[1]);
+                    html += `<span class="command">${escapeHtml(cmdMatch[2])}</span>`;
+                    rest = s.slice(cmdMatch[0].length);
+                }
+                let last = 0;
+                rest.replace(strRe, (m, _g1, offset) => {
+                    html += highlightPlain(rest.slice(last, offset));
+                    html += `<span class="string">${escapeHtml(m)}</span>`;
+                    last = offset + m.length;
+                    return m;
+                });
+                html += highlightPlain(rest.slice(last));
+                return html;
+            }
+
+            const [codePart, commentPart] = splitComment(line);
+            let html = highlightCode(codePart);
+            if (commentPart) html += `<span class="comment">${escapeHtml(commentPart)}</span>`;
+            return html;
         }
 
         function escapeHtml(text) {
