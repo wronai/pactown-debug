@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pactown"
+version = "1.0.0"
+description = "Pactown Code Analyzer - Multi-language code analysis and auto-fix"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["linter", "code-analysis", "bash", "python", "php", "javascript"]
+
+[project.scripts]
+pactown = "pactown.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/wronai/pactown-debug"
+Repository = "https://github.com/wronai/pactown-debug"
+
+[tool.setuptools.packages.find]
+where = ["."]

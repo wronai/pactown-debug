@@ -192,6 +192,12 @@ def apply_fixes(code: str, issues: list) -> tuple[str, list]:
         original_line = lines[line_num]
         fixed_line = original_line
         code_id = issue.get('code', '')
+        if isinstance(code_id, int):
+            code_id = f"SC{code_id}"
+        else:
+            code_id = str(code_id)
+            if code_id and not code_id.startswith('SC'):
+                code_id = f"SC{code_id}"
         
         # Apply specific fixes based on error code
         if code_id == 'SC1073' or code_id == 'SC1009':
@@ -243,14 +249,18 @@ def analyze_code(code: str) -> dict:
         # Categorize issues
         for issue in issues:
             level = issue.get('level', 'warning')
+            code_id = issue.get('code', '')
+            if isinstance(code_id, int):
+                code_id = f"SC{code_id}"
+            else:
+                code_id = str(code_id)
+                if code_id and not code_id.startswith('SC'):
+                    code_id = f"SC{code_id}"
             msg = {
                 'line': issue.get('line', 0),
                 'column': issue.get('column', 0),
-                'code': issue.get('code', ''),
-                'message': SHELLCHECK_MESSAGES.get(
-                    f"SC{issue.get('code', '')}",
-                    issue.get('message', 'Nieznany błąd')
-                )
+                'code': code_id,
+                'message': SHELLCHECK_MESSAGES.get(code_id, issue.get('message', 'Nieznany błąd'))
             }
             
             if level == 'error':
@@ -392,6 +402,178 @@ def analyze_python_code(code: str) -> dict:
     }
 
 
+def analyze_php_code(code: str) -> dict:
+    """Analyze PHP code for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Check for missing semicolon (simple heuristic)
+        if stripped and not stripped.endswith((';', '{', '}', ':', '//', '/*', '*/', '<?php', '?>', '#')) \
+           and not stripped.startswith(('if', 'else', 'for', 'while', 'foreach', 'function', 'class', '//', '/*', '*')):
+            if '=' in stripped or 'echo' in stripped or 'return' in stripped:
+                warnings.append({
+                    'line': i,
+                    'column': len(stripped),
+                    'code': 'PHP001',
+                    'message': 'Możliwy brak średnika na końcu linii'
+                })
+        
+        # Check for == instead of === in comparisons
+        if re.search(r'[^=!<>]==[^=]', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'PHP002',
+                'message': 'Użyj === zamiast == dla ścisłego porównania'
+            })
+        
+        # Check for mysql_* functions (deprecated)
+        if re.search(r'\bmysql_\w+\s*\(', line):
+            errors.append({
+                'line': i,
+                'column': 1,
+                'code': 'PHP003',
+                'message': 'Funkcje mysql_* są przestarzałe - użyj mysqli_* lub PDO'
+            })
+        
+        # Check for extract() usage (security risk)
+        if re.search(r'\bextract\s*\(', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'PHP004',
+                'message': 'extract() może być niebezpieczne - rozważ jawne przypisanie'
+            })
+        
+        # Check for error suppression @
+        if re.search(r'@\w+', line) and not stripped.startswith('//'):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'PHP005',
+                'message': 'Operator @ tłumi błędy - użyj try/catch'
+            })
+        
+        # Check for short open tag
+        if '<?=' in line or (stripped.startswith('<?') and not stripped.startswith('<?php')):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'PHP006',
+                'message': 'Używaj pełnego tagu <?php zamiast krótkiego <? lub <?='
+            })
+    
+    return {
+        'errors': errors,
+        'warnings': warnings,
+        'fixes': fixes
+    }
+
+
+def analyze_javascript_code(code: str) -> dict:
+    """Analyze JavaScript/Node.js code for common issues."""
+    errors = []
+    warnings = []
+    fixes = []
+    lines = code.split('\n')
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Check for var usage (prefer let/const)
+        if re.search(r'\bvar\s+\w+', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS001',
+                'message': 'Użyj let lub const zamiast var'
+            })
+            # Fix: replace var with let
+            fixed_line = re.sub(r'\bvar\b', 'let', line)
+            if fixed_line != line:
+                fixes.append({
+                    'line': i,
+                    'message': 'Zamieniono var na let',
+                    'before': line.strip(),
+                    'after': fixed_line.strip()
+                })
+        
+        # Check for == instead of ===
+        if re.search(r'[^=!<>]==[^=]', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS002',
+                'message': 'Użyj === zamiast == dla ścisłego porównania'
+            })
+        
+        # Check for console.log (might be debug code)
+        if re.search(r'\bconsole\.(log|debug|info)\s*\(', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS003',
+                'message': 'console.log może być kodem debugującym - usuń przed produkcją'
+            })
+        
+        # Check for eval() usage
+        if re.search(r'\beval\s*\(', line):
+            errors.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS004',
+                'message': 'eval() jest niebezpieczne - unikaj użycia'
+            })
+        
+        # Check for function without arrow (in simple cases)
+        if re.search(r'function\s*\(\s*\)\s*{', line) and 'constructor' not in line:
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS005',
+                'message': 'Rozważ użycie arrow function () => {}'
+            })
+        
+        # Check for callback hell (nested callbacks)
+        indent = len(line) - len(line.lstrip())
+        if indent > 16 and ('function' in line or '=>' in line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'JS006',
+                'message': 'Głębokie zagnieżdżenie - rozważ async/await lub Promise'
+            })
+        
+        # Check for require() vs import (Node.js)
+        if re.search(r'\brequire\s*\([\'"]', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'NODE001',
+                'message': 'Rozważ użycie ES modules (import) zamiast require()'
+            })
+        
+        # Check for sync fs operations in Node.js
+        if re.search(r'\b(readFileSync|writeFileSync|appendFileSync)\b', line):
+            warnings.append({
+                'line': i,
+                'column': 1,
+                'code': 'NODE002',
+                'message': 'Synchroniczne operacje I/O blokują event loop - użyj wersji async'
+            })
+    
+    return {
+        'errors': errors,
+        'warnings': warnings,
+        'fixes': fixes
+    }
+
+
 def detect_language(code: str) -> str:
     """Detect the programming language of the code."""
     lines = code.strip().split('\n')
@@ -403,11 +585,17 @@ def detect_language(code: str) -> str:
             return 'python'
         if 'bash' in first_line or 'sh' in first_line:
             return 'bash'
+        if 'node' in first_line:
+            return 'nodejs'
+    
+    # Check for PHP
+    if '<?php' in code or '<?=' in code:
+        return 'php'
     
     # Check for Python-specific patterns
     python_patterns = [
         r'^def\s+\w+\s*\(',
-        r'^class\s+\w+',
+        r'^class\s+\w+.*:',
         r'^import\s+\w+',
         r'^from\s+\w+\s+import',
         r'print\s*\(',
@@ -417,6 +605,33 @@ def detect_language(code: str) -> str:
     for pattern in python_patterns:
         if any(re.search(pattern, line) for line in lines):
             return 'python'
+    
+    # Check for Node.js-specific patterns
+    nodejs_patterns = [
+        r'\brequire\s*\([\'"]',
+        r'\bmodule\.exports\b',
+        r'\bprocess\.(env|argv|exit)\b',
+        r'from\s+[\'"][^"\']+[\'"]\s*;?\s*$',
+    ]
+    
+    for pattern in nodejs_patterns:
+        if any(re.search(pattern, line) for line in lines):
+            return 'nodejs'
+    
+    # Check for JavaScript patterns
+    js_patterns = [
+        r'\bconst\s+\w+\s*=',
+        r'\blet\s+\w+\s*=',
+        r'\bvar\s+\w+\s*=',
+        r'function\s+\w+\s*\(',
+        r'=>\s*{',
+        r'\bdocument\.',
+        r'\bwindow\.',
+    ]
+    
+    for pattern in js_patterns:
+        if any(re.search(pattern, line) for line in lines):
+            return 'javascript'
     
     # Check for Bash-specific patterns
     bash_patterns = [
@@ -435,9 +650,9 @@ def detect_language(code: str) -> str:
     return 'bash'  # Default to bash
 
 
-def analyze_code_multi(code: str) -> dict:
+def analyze_code_multi(code: str, force_language: str = None) -> dict:
     """Analyze code with automatic language detection."""
-    language = detect_language(code)
+    language = force_language or detect_language(code)
     
     result = {
         'originalCode': code,
@@ -448,11 +663,27 @@ def analyze_code_multi(code: str) -> dict:
         'language': language
     }
     
+    lang_result = None
+    
     if language == 'python':
-        python_result = analyze_python_code(code)
-        result['errors'] = python_result.get('errors', [])
-        result['warnings'] = python_result.get('warnings', [])
-        result['fixes'] = python_result.get('fixes', [])
+        lang_result = analyze_python_code(code)
+    elif language == 'php':
+        lang_result = analyze_php_code(code)
+    elif language in ('javascript', 'nodejs'):
+        lang_result = analyze_javascript_code(code)
+    else:
+        # Use existing bash analysis
+        bash_result = analyze_code(code)
+        result['errors'] = bash_result.get('errors', [])
+        result['warnings'] = bash_result.get('warnings', [])
+        result['fixes'] = bash_result.get('fixes', [])
+        result['fixedCode'] = bash_result.get('fixedCode', code)
+        return result
+    
+    if lang_result:
+        result['errors'] = lang_result.get('errors', [])
+        result['warnings'] = lang_result.get('warnings', [])
+        result['fixes'] = lang_result.get('fixes', [])
         
         # Apply fixes
         lines = code.split('\n')
@@ -463,16 +694,29 @@ def analyze_code_multi(code: str) -> dict:
                     lines[line_num] = lines[line_num].replace(fix['before'], fix['after'])
         
         result['fixedCode'] = '\n'.join(lines)
-        result['fixedCode'] = add_fix_comments(result['fixedCode'], result['fixes'])
-    else:
-        # Use existing bash analysis
-        bash_result = analyze_code(code)
-        result['errors'] = bash_result.get('errors', [])
-        result['warnings'] = bash_result.get('warnings', [])
-        result['fixes'] = bash_result.get('fixes', [])
-        result['fixedCode'] = bash_result.get('fixedCode', code)
+        
+        # Add comments based on language
+        comment_char = '#' if language == 'python' else '//'
+        result['fixedCode'] = add_fix_comments_lang(result['fixedCode'], result['fixes'], comment_char)
     
     return result
+
+
+def add_fix_comments_lang(code: str, fixes: list, comment_char: str = '#') -> str:
+    """Add comments explaining fixes to the code with language-specific comment style."""
+    if not fixes:
+        return code
+    
+    lines = code.split('\n')
+    
+    for fix in sorted(fixes, key=lambda x: x['line'], reverse=True):
+        line_num = fix['line'] - 1
+        if 0 <= line_num < len(lines):
+            comment = f"  {comment_char} ✅ NAPRAWIONO: {fix['message']}"
+            if comment not in lines[line_num]:
+                lines[line_num] = lines[line_num].rstrip() + comment
+    
+    return '\n'.join(lines)
 
 
 class DebugHandler(SimpleHTTPRequestHandler):
@@ -555,7 +799,12 @@ def main():
     server_address = ('', port)
     
     # Set directory
-    app_dir = os.environ.get('APP_DIR', '/app')
+    app_dir_env = os.environ.get('APP_DIR')
+    if app_dir_env:
+        app_dir = app_dir_env
+    else:
+        local_app_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app')
+        app_dir = local_app_dir if os.path.isdir(local_app_dir) else '/app'
     
     handler = lambda *args, **kwargs: DebugHandler(*args, directory=app_dir, **kwargs)
     httpd = HTTPServer(server_address, handler)

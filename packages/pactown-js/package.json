@@ -1,0 +1,20 @@
+{
+  "name": "pactown",
+  "version": "1.0.0",
+  "description": "Pactown Code Analyzer - Multi-language code analysis and auto-fix",
+  "main": "src/index.js",
+  "bin": {
+    "pactown": "./bin/pactown.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/*.test.js"
+  },
+  "keywords": ["linter", "code-analysis", "bash", "python", "php", "javascript"],
+  "author": "Softreck",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wronai/pactown-debug"
+  }
+}

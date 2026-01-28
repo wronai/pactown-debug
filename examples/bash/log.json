@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-01-28T15:48:10.095410",
+  "input_file": "examples/bash/faulty.sh",
+  "output_file": "examples/bash/fixed.sh",
+  "language": "bash",
+  "errors_count": 1,
+  "warnings_count": 2,
+  "fixes_count": 1,
+  "errors": [
+    {
+      "line": 8,
+      "code": "SC1073",
+      "message": "Cudzysłów zamykający jest w złym miejscu"
+    }
+  ],
+  "warnings": [
+    {
+      "line": 13,
+      "code": "SC2164",
+      "message": "Użyj cd ... || exit"
+    },
+    {
+      "line": 14,
+      "code": "SC2162",
+      "message": "Użyj read -r"
+    }
+  ],
+  "fixes": [
+    {
+      "line": 8,
+      "message": "Poprawiono pozycję cudzysłowu",
+      "before": "echo \"$(ssh student@${HOST} hostname -f\") >> ${OUTPUT}${HOST}",
+      "after": "echo \"$(ssh student@${HOST} hostname -f)\" >> ${OUTPUT}${HOST}"
+    }
+  ]
+}
