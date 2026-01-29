@@ -452,6 +452,9 @@ def process_project(project_path: str, comment: bool = False, sandbox: bool = Fa
     # Add Dockerfiles and special files
     files_to_process.extend(path.rglob('Dockerfile'))
     files_to_process.extend(path.rglob('Makefile'))
+    files_to_process.extend(path.rglob('Jenkinsfile'))
+    files_to_process.extend(path.rglob('.gitlab-ci.yml'))
+    files_to_process.extend(path.rglob('.gitlab-ci.yaml'))
     
     # Filter out hidden directories and common excludes
     exclude_dirs = {'.git', '.pactfix', '_fixtures', 'node_modules', '__pycache__', 'venv', '.venv', 

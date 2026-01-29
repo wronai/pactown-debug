@@ -1870,6 +1870,9 @@ def analyze_code_multi(code: str, force_language: str = None, filename: str = No
         result['warnings'] = bash_result.get('warnings', [])
         result['fixes'] = bash_result.get('fixes', [])
         result['fixedCode'] = bash_result.get('fixedCode', code)
+        # Add comments for bash fixes too
+        if result['fixes']:
+            result['fixedCode'] = add_fix_comments_lang(result['fixedCode'], result['fixes'], '#')
         return result
     
     if lang_result:
@@ -2076,6 +2079,9 @@ class DebugHandler(SimpleHTTPRequestHandler):
                             result = pf_result.to_dict()
                         else:
                             result = pf_result
+                        # Add comments for pactfix fixes
+                        if result and result.get('fixes'):
+                            result['fixedCode'] = add_fix_comments_lang(result['fixedCode'], result['fixes'], '#')
                     except Exception as e:
                         logger.warning(f"Local pactfix analyzer error, falling back to local legacy: {e}")
                 

@@ -1,0 +1,21 @@
+stages:
+  - build
+  - test
+
+variables:
+  PASSWORD: secret123
+
+build:
+	stage: build
+	image: python:latest
+	script:
+	  - echo "Building"
+	  - curl -s https://example.com/install.sh | bash
+	only:
+	  - master
+
+test:
+  stage: test
+  image: alpine
+  script:
+    - echo "Testing"   

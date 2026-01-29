@@ -167,11 +167,16 @@ def analyze_apache(code: str) -> AnalysisResult:
             continue
         if in_ssl_vhost and stripped.lower().startswith('</virtualhost'):
             block = '\n'.join(fixed_lines[max(0, idx-80):idx+1])
+            if 'SSLHonorCipherOrder' not in block:
+                insert_line = ssl_vhost_indent + '    ' + 'SSLHonorCipherOrder on'
+                fixed_lines.insert(idx, insert_line)
+                fixes.append(Fix(idx + 1, 'Dodano SSLHonorCipherOrder on', '', insert_line.strip()))
             if 'Header always set X-Frame-Options' not in block and 'Header set X-Frame-Options' not in block:
                 insert_lines = [
                     ssl_vhost_indent + '    ' + 'Header always set X-Frame-Options "SAMEORIGIN"',
                     ssl_vhost_indent + '    ' + 'Header always set X-Content-Type-Options "nosniff"',
                     ssl_vhost_indent + '    ' + 'Header always set Referrer-Policy "strict-origin-when-cross-origin"',
+                    ssl_vhost_indent + '    ' + 'Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"',
                 ]
                 for j, ins in enumerate(insert_lines):
                     fixed_lines.insert(idx + j, ins)

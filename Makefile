@@ -4,7 +4,7 @@ SHELL := /bin/bash
 -include .env
 export
 
-.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish build-pactfix bump-patch clean build run stop down
+.PHONY: help test test-frontend test-backend test-pactfix test-sandbox test-sandbox-tests lint publish push build-pactfix bump-patch clean build run stop down
 
 PACTFIX_DIR ?= pactfix-py
 PORT ?= 8081
@@ -18,6 +18,7 @@ help:
 	@echo "  make test-sandbox-tests - run sandbox smoke test + run in-container test commands (--test)"
 	@echo "  make test-backend   - basic python syntax check for server.py"
 	@echo "  make publish        - build + upload python package pactfix (requires twine credentials)"
+	@echo "  make push           - git add . + commit + push to remote"
 	@echo "  make build          - build Docker image for pactown-debug"
 	@echo "  make run            - run Docker container (builds if needed)"
 	@echo "  make stop           - stop and remove running container"
@@ -30,8 +31,8 @@ test-frontend:
 	npm test
 
 test-backend:
-	python -m py_compile server.py
-	python -m unittest discover -s tests -q
+	python3 -m py_compile server.py
+	python3 -m unittest discover -s tests -q
 
 test-pactfix:
 	cd $(PACTFIX_DIR) && python -c "import pytest" >/dev/null 2>&1 || python -m pip install -q -e ".[dev]"
@@ -52,6 +53,16 @@ bump-patch:
 
 publish: bump-patch build-pactfix
 	cd $(PACTFIX_DIR) && python -m twine upload dist/*
+
+push:
+	@git add -A && \
+	if git diff --cached --quiet; then \
+		echo "No changes to commit."; \
+	else \
+		read -p "Enter commit message: " msg; \
+		git commit -m "$$msg"; \
+	fi && \
+	git push
 
 build:
 	docker build -t pactown-debug .

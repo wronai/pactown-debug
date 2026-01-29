@@ -1,6 +1,6 @@
 # Pactown Live Debug 🚀
 
-Real-time Bash script analyzer and auto-fixer with ShellCheck integration.
+Multi-language code analyzer and auto-fixer with Docker sandbox testing support.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
@@ -12,7 +12,8 @@ Real-time Bash script analyzer and auto-fixer with ShellCheck integration.
 - 🔧 **Auto-fix** - Automatyczne naprawianie typowych błędów
 - 📜 **Historia zmian** - Pełna historia wykrytych błędów i poprawek
 - 💾 **Download** - Pobieranie poprawionego skryptu
-- 🐳 **Docker** - Łatwe uruchomienie w kontenerze
+- 🐳 **Docker sandbox** - Testowanie poprawek w izolowanym środowisku
+- 🧪 **Multi-language** - Wsparcie dla Bash, Python, Go, Node.js, Dockerfile i innych
 
 ## Quick Start
 
@@ -124,15 +125,61 @@ Analizuje kod Bash i zwraca wyniki.
 - **Analysis**: ShellCheck (z fallback do wbudowanej analizy)
 - **Container**: Docker, Alpine-based
 
+## Pactfix CLI 🛠️
+
+Projekt zawiera również narzędzie CLI `pactfix` do analizy i automatycznego poprawiania kodu w wielu językach.
+
+### Główne funkcje
+
+- **Project-wide scanning** (`--path`) - Analiza całego projektu
+- **Docker sandbox** (`--sandbox`) - Testowanie poprawek w kontenerze
+- **Automated testing** (`--test`) - Uruchamianie testów w sandboxie
+- **Multi-language support** - Bash, Python, Go, Node.js, Dockerfile, i inne
+
+### Przykłady użycia
+
+```bash
+# Analiza i poprawa całego projektu
+pactfix --path ./my-project
+
+# Uruchomienie w Docker sandboxie
+pactfix --path ./my-project --sandbox
+
+# Sandbox z testami
+pactfix --path ./my-project --sandbox --test
+
+# Wstawianie komentarzy nad poprawkami
+pactfix --path ./my-project --comment
+```
+
+### Testowanie sandboxów
+
+Projekt zawiera zestaw projektów testowych w `pactfix-py/test-projects/`:
+
+```bash
+# Uruchomienie testów sandboxów
+make test-sandbox
+
+# Uruchomienie z testami w kontenerach
+make test-sandbox-tests
+```
+
+Każdy projekt testowy ma `_fixtures/faulty/` z baseline'owym kodem, co zapewnia deterministyczne testowanie.
+
 ## Struktura projektu
 
 ```
-pactown-live-debug/
+pactown-debug/
 ├── app/
 │   └── index.html      # Frontend application
 ├── server.py           # Python backend server
+├── pactfix-py/         # Pactfix CLI tool
+│   ├── pactfix/        # Main package
+│   ├── test-projects/  # Test projects with fixtures
+│   └── scripts/        # Test scripts
 ├── Dockerfile          # Container definition
 ├── docker-compose.yml  # Docker Compose config
+├── Makefile           # Build and test targets
 └── README.md          # This file
 ```
 
@@ -140,10 +187,11 @@ pactown-live-debug/
 
 ### Roadmap
 
-- [ ] Wsparcie dla Python/Node.js
+- [x] Wsparcie dla Python/Node.js/Go/Dockerfile
 - [ ] AI-powered explanations (llama.cpp)
 - [ ] Collaborative debugging
 - [ ] VSCode extension
+- [ ] Więcej reguł automatycznych poprawek
 
 ### Contributing
 

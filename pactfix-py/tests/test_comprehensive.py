@@ -80,6 +80,8 @@ EXPECTED_ISSUES = {
     'github-actions': 5,
     'ansible': 5,
     'helm': 4,
+    'gitlab-ci': 4,
+    'jenkinsfile': 4,
 }
 
 # Fixture file mappings
@@ -112,6 +114,8 @@ FIXTURE_FILES = {
     'github-actions': 'github-actions/workflow.yml',
     'ansible': 'ansible/playbook.yml',
     'helm': 'helm/values.yaml',
+    'gitlab-ci': 'gitlab-ci/.gitlab-ci.yml',
+    'jenkinsfile': 'jenkinsfile/Jenkinsfile',
 }
 
 

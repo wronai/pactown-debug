@@ -13,7 +13,7 @@ SUPPORTED_LANGUAGES = [
     'typescript', 'go', 'rust', 'java', 'csharp', 'ruby',
     'makefile', 'yaml', 'apache', 'systemd', 'html', 'css',
     'json', 'toml', 'ini',
-    'helm']
+    'helm', 'gitlab-ci', 'jenkinsfile']
 
 @dataclass
 class Issue:
@@ -122,6 +122,10 @@ def detect_language(code: str, filename: str = None) -> str:
             return 'apache'
         if fn_lower.endswith('.service') or fn_lower.endswith('.timer'):
             return 'systemd'
+        if fn_name in ('.gitlab-ci.yml', '.gitlab-ci.yaml'):
+            return 'gitlab-ci'
+        if fn_name == 'jenkinsfile':
+            return 'jenkinsfile'
 
     # Content-based detection
     if any(line.strip().upper().startswith(('FROM ', 'RUN ', 'COPY ', 'ENTRYPOINT ')) for line in lines[:20]):
@@ -143,6 +147,12 @@ def detect_language(code: str, filename: str = None) -> str:
     
     if 'on:' in code and ('push:' in code or 'pull_request:' in code) and 'jobs:' in code:
         return 'github-actions'
+    
+    if 'stages:' in code and 'script:' in code and ('.gitlab-ci' in (filename or '').lower() or 'gitlab' in code.lower()):
+        return 'gitlab-ci'
+
+    if ('pipeline {' in code or 'node {' in code) and ('stage(' in code or 'stages {' in code):
+        return 'jenkinsfile'
     
     if '- hosts:' in code or ('- name:' in code and 'tasks:' in code):
         return 'ansible'
@@ -278,6 +288,8 @@ def add_fix_comments(result: AnalysisResult) -> str:
         'systemd': '#',
         'html': '<!--',
         'css': '/*',
+        'gitlab-ci': '#',
+        'jenkinsfile': '//',
     }
     comment_suffix_by_language = {
         'html': ' -->',
@@ -482,12 +494,21 @@ def analyze_bash(code: str) -> AnalysisResult:
             warnings.append(Issue(i, 1, 'SC2162', 'read bez -r może interpretować backslashe'))
         
         # Check for misplaced quotes
+        # Pattern 1: word="text"word (quotes between words)
         quote_match = re.search(r'(\w+)="([^"]*)"(\w+)', stripped)
         if quote_match:
             errors.append(Issue(i, 1, 'SC1073', 'Błędne umiejscowienie cudzysłowów'))
             fixed = f'{quote_match.group(1)}="{quote_match.group(2)}{quote_match.group(3)}"'
             fixes.append(Fix(i, 'Poprawiono cudzysłowy', quote_match.group(0), fixed))
             current_line = current_line.replace(quote_match.group(0), fixed)
+        
+        # Pattern 2: Mismatched quotes in command substitution like $(cmd")
+        if re.search(r'\$\([^)]*"[^)]*\)', stripped):
+            errors.append(Issue(i, 1, 'SC1073', 'Błędnie umieszczony cudzysłów wewnątrz podstawienia polecenia'))
+            # Fix by moving the quote outside
+            fixed = re.sub(r'\$\(([^)]*)"([^)]*)\)', r'$(\1\2)"', stripped)
+            fixes.append(Fix(i, 'Poprawiono cudzysłów w podstawieniu', stripped, fixed))
+            current_line = current_line.replace(stripped, fixed)
         
         fixed_lines[i-1] = current_line
     
@@ -1041,7 +1062,7 @@ def analyze_kubernetes(code: str) -> AnalysisResult:
 def analyze_nginx(code: str) -> AnalysisResult:
     """Analyze nginx config."""
     errors, warnings, fixes = [], [], []
-    lines = code.split('\n')
+    lines = code.splitlines()
     fixed_lines = lines.copy()
 
     for i, line in enumerate(lines, 1):
@@ -1097,12 +1118,35 @@ def analyze_nginx(code: str) -> AnalysisResult:
             server_level = None
 
     inserts = []
+    all_text = '\n'.join(fixed_lines)
+    has_any_ssl = bool(re.search(r'^\s*listen\s+443\b', all_text, re.MULTILINE)) or ('ssl_certificate' in all_text)
 
     for start, end in server_blocks:
         block_lines = fixed_lines[start:end + 1]
         block_text = '\n'.join(block_lines)
         has_ssl = bool(re.search(r'^\s*listen\s+443\b', block_text, re.MULTILINE)) or ' ssl' in block_text
+        has_http = bool(re.search(r'^\s*listen\s+80\b', block_text, re.MULTILINE))
         has_headers = 'add_header' in block_text
+
+        if has_http and has_any_ssl and 'return 301 https://' not in block_text:
+            insert_at = end
+            insert_indent = None
+            for j in range(start, end + 1):
+                if 'server_name' in fixed_lines[j]:
+                    insert_at = j + 1
+                    insert_indent = re.match(r'^\s*', fixed_lines[j]).group(0)
+                    break
+            if insert_indent is None:
+                for j in range(start, end + 1):
+                    if re.search(r'^\s*listen\s+80\b', fixed_lines[j]):
+                        insert_at = j + 1
+                        insert_indent = re.match(r'^\s*', fixed_lines[j]).group(0)
+                        break
+            if insert_indent is None:
+                insert_indent = re.match(r'^\s*', fixed_lines[start]).group(0) + '    '
+
+            inserts.append((insert_at, [insert_indent + 'return 301 https://$host$request_uri;'], start + 1))
+            warnings.append(Issue(start + 1, 1, 'NGINX007', 'Brak przekierowania HTTP->HTTPS'))
 
         if has_ssl and not has_headers:
             warnings.append(Issue(start + 1, 1, 'NGINX005', 'Brak security headers'))
@@ -1120,8 +1164,21 @@ def analyze_nginx(code: str) -> AnalysisResult:
                 insert_indent + 'add_header X-Frame-Options "SAMEORIGIN" always;',
                 insert_indent + 'add_header X-Content-Type-Options "nosniff" always;',
                 insert_indent + 'add_header Referrer-Policy "strict-origin-when-cross-origin" always;',
+                insert_indent + 'add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;',
             ]
             inserts.append((insert_at, hdrs, start + 1))
+
+        if has_ssl and 'ssl_session_tickets' not in block_text:
+            insert_at = end
+            insert_indent = re.match(r'^\s*', fixed_lines[start]).group(0) + '    '
+            inserts.append((insert_at, [insert_indent + 'ssl_session_tickets off;'], start + 1))
+            warnings.append(Issue(start + 1, 1, 'NGINX008', 'Brak ssl_session_tickets off'))
+
+        if has_ssl and 'ssl_prefer_server_ciphers' not in block_text:
+            insert_at = end
+            insert_indent = re.match(r'^\s*', fixed_lines[start]).group(0) + '    '
+            inserts.append((insert_at, [insert_indent + 'ssl_prefer_server_ciphers on;'], start + 1))
+            warnings.append(Issue(start + 1, 1, 'NGINX009', 'Brak ssl_prefer_server_ciphers on'))
 
         if re.search(r'^\s*location\s+~\s*/\\.\s*\{\s*$', block_text, re.MULTILINE):
             brace2 = 0
@@ -1226,6 +1283,8 @@ try:
     from .analyzers.html import analyze_html
     from .analyzers.css import analyze_css
     from .analyzers.helm import analyze_helm
+    from .analyzers.gitlab_ci import analyze_gitlab_ci
+    from .analyzers.jenkinsfile import analyze_jenkinsfile
     from .analyzers.json_generic import analyze_json
     from .analyzers.toml_generic import analyze_toml
     from .analyzers.ini_generic import analyze_ini
@@ -1252,6 +1311,8 @@ def analyze_code(code: str, filename: str = None, force_language: str = None) ->
         'nginx': analyze_nginx,
         'github-actions': analyze_github_actions,
         'ansible': analyze_ansible,
+        'gitlab-ci': analyze_gitlab_ci,
+        'jenkinsfile': analyze_jenkinsfile,
     }
     
     # Add new analyzers if available

@@ -16,6 +16,8 @@ from .json_generic import analyze_json
 from .toml_generic import analyze_toml
 from .ini_generic import analyze_ini
 from .helm import analyze_helm
+from .gitlab_ci import analyze_gitlab_ci
+from .jenkinsfile import analyze_jenkinsfile
 
 __all__ = [
     'analyze_typescript',
@@ -34,4 +36,6 @@ __all__ = [
     'analyze_toml',
     'analyze_ini',
     'analyze_helm',
+    'analyze_gitlab_ci',
+    'analyze_jenkinsfile',
 ]
