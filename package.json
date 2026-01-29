@@ -1,6 +1,6 @@
 {
   "name": "pactown-debug",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Real-time Bash script analyzer and auto-fixer with ShellCheck integration.",
   "main": "index.js",
   "scripts": {

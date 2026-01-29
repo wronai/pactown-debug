@@ -1,3 +1,20 @@
+## [1.0.5] - 2026-01-29
+
+### Summary
+
+refactor(docs): code quality metrics with 6 supporting modules
+
+### Docs
+
+- docs: update PYPI.md
+
+### Other
+
+- update pactfix-py/pactfix/analyzers/docker_compose.py
+- update pactfix-py/pactfix/analyzers/kubernetes.py
+- update pactfix-py/pyproject.toml
+
+
 ## [1.0.4] - 2026-01-29
 
 ### Summary

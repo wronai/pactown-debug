@@ -5,10 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pactfix"
 version = "1.0.3"
-description = "Multi-language code and config file analyzer and fixer"
-readme = "README.md"
+description = "🔧 Multi-language code analyzer and auto-fixer with Docker sandbox support"
+
+[project.readme]
+file = "PYPI.md"
+content-type = "text/markdown"
+
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
+authors = [
+    {name = "Pactown Team", email = "team@pactown.dev"},
+]
+maintainers = [
+    {name = "Pactown Team", email = "team@pactown.dev"},
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -18,8 +28,13 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
 ]
-keywords = ["linter", "code-analysis", "bash", "python", "php", "javascript", "docker", "sql", "terraform", "kubernetes"]
+keywords = ["linter", "code-analysis", "auto-fix", "bash", "python", "php", "javascript", "docker", "sql", "terraform", "kubernetes", "gitlab-ci", "jenkinsfile", "devops", "ci-cd"]
 dependencies = [
     "flask>=2.0.0",
     "flask-cors>=3.0.0",
@@ -36,8 +51,11 @@ dev = [
 pactfix = "pactfix.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/wronai/pactfix-debug"
-Repository = "https://github.com/wronai/pactfix-debug"
+Homepage = "https://pactown.dev"
+Documentation = "https://github.com/wronai/pactown-debug/blob/main/pactfix-py/README.md"
+Repository = "https://github.com/wronai/pactown-debug"
+"Bug Tracker" = "https://github.com/wronai/pactown-debug/issues"
+Changelog = "https://github.com/wronai/pactown-debug/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -62,14 +62,18 @@ def analyze_kubernetes(code: str) -> AnalysisResult:
                     if not isinstance(container, dict):
                         continue
                     
-                    container_name = container.get('name', f'container-{idx}')
+                    container_name = container.get('name')
+                    container_display_name = container_name or f'container-{idx}'
                     
                     # Image tag fixes
                     image = container.get('image', '')
                     if image:
                         if ':latest' in image or ':' not in image:
                             # Find image line
-                            img_line = _find_container_line(lines, container_name, 'image')
+                            if container_name:
+                                img_line = _find_container_line(lines, container_name, 'image')
+                            else:
+                                img_line = _find_container_key_line_by_index(lines, idx, 'image')
                             if img_line:
                                 warnings.append(Issue(img_line, 1, 'K8S004', 'Użyj konkretnego tagu'))
                                 replacement = _suggest_image_tag(image)
@@ -81,7 +85,10 @@ def analyze_kubernetes(code: str) -> AnalysisResult:
                     security_context = container.get('securityContext', {})
                     if isinstance(security_context, dict):
                         if security_context.get('privileged') is True:
-                            priv_line = _find_container_line(lines, container_name, 'privileged')
+                            if container_name:
+                                priv_line = _find_container_line(lines, container_name, 'privileged')
+                            else:
+                                priv_line = _find_container_key_line_by_index(lines, idx, 'privileged')
                             if priv_line:
                                 errors.append(Issue(priv_line, 1, 'K8S001', 'Kontener privileged'))
                                 # Remove privileged: true
@@ -202,6 +209,61 @@ def analyze_kubernetes(code: str) -> AnalysisResult:
                             errors.append(Issue(i, 1, 'K8S006', 'Hardcoded secret - użyj Secret'))
 
     return AnalysisResult('kubernetes', code, '\n'.join(fixed_lines), errors, warnings, fixes, {'kinds': [d.get('kind') for d in documents if isinstance(d, dict)]})
+
+
+def _find_container_key_line_by_index(lines: List[str], container_index: int, key: str) -> int:
+    """Find the line number for a key within the Nth container item in spec.containers.
+
+    This is a fallback for minimal YAML inputs where a container may not have a `name:` field.
+    """
+    containers_line_idx = None
+    containers_indent = 0
+    for i, line in enumerate(lines):
+        if line.strip().startswith('containers:'):
+            containers_line_idx = i
+            containers_indent = len(line) - len(line.lstrip())
+            break
+
+    if containers_line_idx is None:
+        return 0
+
+    item_start_idx = None
+    item_indent = 0
+    item_count = -1
+    for i in range(containers_line_idx + 1, len(lines)):
+        line = lines[i]
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+
+        # Left containers list (next key in spec/etc.)
+        if indent <= containers_indent and not line.lstrip().startswith('-'):
+            break
+
+        if line.lstrip().startswith('-'):
+            item_count += 1
+            if item_count == container_index:
+                item_start_idx = i
+                item_indent = indent
+                break
+
+    if item_start_idx is None:
+        return 0
+
+    key_re = re.compile(rf'^\s*(?:-\s*)?{re.escape(key)}\s*:')
+    for j in range(item_start_idx, len(lines)):
+        line = lines[j]
+        if j > item_start_idx and line.strip():
+            indent = len(line) - len(line.lstrip())
+            if indent <= containers_indent and not line.lstrip().startswith('-'):
+                break
+            if line.lstrip().startswith('-') and indent == item_indent:
+                break
+
+        if key_re.search(line):
+            return j + 1
+
+    return 0
 
 
 def _find_container_line(lines: List[str], container_name: str, key: str) -> int:

@@ -104,6 +104,23 @@ def analyze_docker_compose(code: str) -> AnalysisResult:
                         if f'{k}:' in lines[j]:
                             errors.append(Issue(j + 1, 1, 'COMPOSE005', 'Hardcoded secret - użyj .env'))
                             break
+        elif isinstance(env, list):
+            for item in env:
+                if not isinstance(item, str):
+                    continue
+                if '=' not in item:
+                    continue
+                k, v = item.split('=', 1)
+                k = k.strip()
+                v = v.strip()
+                if not k:
+                    continue
+                if any(p in k.upper() for p in secret_patterns) and v and not v.startswith('${'):
+                    env_line = key_line_map.get(svc_name, 1)
+                    for j in range(env_line, len(lines)):
+                        if item in lines[j]:
+                            errors.append(Issue(j + 1, 1, 'COMPOSE005', 'Hardcoded secret - użyj .env'))
+                            break
 
     # Add networks block if missing and more than 1 service
     if len(services) > 1 and not has_networks:
